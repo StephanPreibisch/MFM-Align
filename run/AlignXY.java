@@ -1,3 +1,21 @@
+/**
+ * License: GPL
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License 2
+ * as published by the Free Software Foundation.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * 
+ * @author: Stephan Preibisch (stephan.preibisch@gmx.de)
+ */
 package run;
 
 import ij.CompositeImage;
@@ -24,6 +42,7 @@ import mpicbg.imglib.image.ImageFactory;
 import mpicbg.imglib.image.display.imagej.ImageJFunctions;
 import mpicbg.imglib.interpolation.linear.LinearInterpolatorFactory;
 import mpicbg.imglib.io.LOCI;
+import mpicbg.imglib.multithreading.SimpleMultiThreading;
 import mpicbg.imglib.outofbounds.OutOfBoundsStrategyMirrorFactory;
 import mpicbg.imglib.type.numeric.real.FloatType;
 import mpicbg.models.IllDefinedDataPointsException;
@@ -79,11 +98,16 @@ public class AlignXY
 			
 			if ( planeStack == null )
 				planeStack = new ImageStack( planeImg.getDimension( 0 ), planeImg.getDimension( 1 ) );
-			planeStack.addSlice( ImageJFunctions.copyToImagePlus( planeImg ).getProcessor() );
+			planeStack.addSlice( plane.name + "_" + plane.tileNumber, ImageJFunctions.copyToImagePlus( planeImg ).getProcessor() );
 		}
 		
 		ImagePlus stack = new ImagePlus( "stack of avg proj", planeStack );
+		
+		// make it a timelapse and not a stack
 		stack = OverlayFusion.switchZTinXYCZT( stack );
+
+		//stack.show();
+		//SimpleMultiThreading.threadHaltUnClean();
 		
 		// compute the per-plane registration
 		// of NPC and mRNA
@@ -140,7 +164,7 @@ public class AlignXY
 		final DescriptorParameters params = new DescriptorParameters();
 		
 		params.dimensionality = 2;
-		params.sigma1 = 2.099f;
+		params.sigma1 = 2.99f; // before 2.099f
 		params.sigma2 = 2.4961457f;
 		params.threshold = 0.020566484f;
 		params.lookForMaxima = true;

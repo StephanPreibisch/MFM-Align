@@ -1,3 +1,21 @@
+/**
+ * License: GPL
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License 2
+ * as published by the Free Software Foundation.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * 
+ * @author: Stephan Preibisch (stephan.preibisch@gmx.de)
+ */
 package run;
 
 import ij.CompositeImage;
@@ -43,8 +61,8 @@ import mpicbg.models.NotEnoughDataPointsException;
 
 public class Align 
 {
-	public static final PrintWriter outAllZ = TextFileAccess.openFileWrite( "/Volumes/TOSHIBA EXT/3D analysis files/alloutZ.txt" );
-	public static final PrintWriter outAllXY = TextFileAccess.openFileWrite( "/Volumes/TOSHIBA EXT/3D analysis files/alloutXY.txt" );
+	public static final PrintWriter outAllZ = null;//TextFileAccess.openFileWrite( "/Volumes/TOSHIBA EXT/3D analysis files/alloutZ.txt" );
+	public static final PrintWriter outAllXY = null;//TextFileAccess.openFileWrite( "/Volumes/TOSHIBA EXT/3D analysis files/alloutXY.txt" );
 	
 	/**
 	 * Will create a hyperstack with the following properties
@@ -329,10 +347,10 @@ public class Align
 		final boolean[] mirrorTarget = new boolean[]{ true, false, true };
 		
 		AlignZ alignZ = new AlignZ( baseDir, names, mirror );
-		//AlignXY alignXY = new AlignXY( alignZ.getPlanes() );
+		AlignXY alignXY = new AlignXY( alignZ.getPlanes() );
 		
 		// apply models to the avg projections
-		//showAlignedProjections( alignZ.getPlanes() ).show();
+		showAlignedProjections( alignZ.getPlanes() ).show();
 		
 		// apply to the images
 		// showAlignedImages( alignZ.getPlanes() ).show();
@@ -344,6 +362,15 @@ public class Align
 		ci.close();
 		*/
 		/*
+<<<<<<< HEAD
+=======
+		CompositeImage ci = createFinalImages( alignZ.getPlanes(), baseDir, target, mirrorTarget, true, false );
+		FileSaver fs = new FileSaver( ci );
+		fs.saveAsTiffStack( new File( baseDir, "avgcorrected_aligned.tif" ).getAbsolutePath() );
+		ci.close();
+		*/
+		/*
+>>>>>>> 773d95b58a7f997788fe6db33f894612fa0da3c3
 		CompositeImage ci = createFinalImages( alignZ.getPlanes(), baseDir, target, mirrorTarget, true, true );
 		FileSaver fs = new FileSaver( ci );
 		fs.saveAsTiffStack( new File( baseDir, "avgcorrected_quantile_aligned.tif" ).getAbsolutePath() );
