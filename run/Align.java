@@ -39,7 +39,6 @@ import process.Mirror;
 import process.OverlayFusion;
 import process.QuantileNormalization;
 
-import loci.formats.FormatException;
 import mpicbg.imglib.container.array.Array;
 import mpicbg.imglib.container.array.ArrayContainerFactory;
 import mpicbg.imglib.container.basictypecontainer.array.FloatArray;
@@ -155,7 +154,7 @@ public class Align
 		return new CompositeImage( result, CompositeImage.COMPOSITE );
 	}
 	
-	public static CompositeImage createFinalImages( final ArrayList< MicroscopyPlane > planes, final String baseDir, final String[] target, final boolean[] mirror, final boolean adjust, final boolean quantile ) throws FormatException, IOException
+	public static CompositeImage createFinalImages( final ArrayList< MicroscopyPlane > planes, final String baseDir, final String[] target, final boolean[] mirror, final boolean adjust, final boolean quantile ) throws Exception, IOException
 	{
 		final File t1 = new File( baseDir, target[ 0 ] );
 		final File t2 = new File( baseDir, target[ 1 ] );
@@ -339,7 +338,7 @@ public class Align
 		}
 	}
 	
-	public static void alignAll(String baseDir) throws FormatException, IOException, NotEnoughDataPointsException, IllDefinedDataPointsException
+	public static void alignAll(String baseDir) throws Exception
 	{
 		final String[] names = new String[]{ "DNA stack mRNA", "DNA stack NPC" };
 		final boolean[] mirror = new boolean[]{ true, false };
@@ -378,7 +377,7 @@ public class Align
 		*/	
 	}
 	
-	public static void main( String[] args ) throws FormatException, IOException, NotEnoughDataPointsException, IllDefinedDataPointsException
+	public static void main( String[] args ) throws Exception
 	{
 
 		new ImageJ();
