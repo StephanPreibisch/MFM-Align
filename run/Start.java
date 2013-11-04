@@ -63,15 +63,36 @@ public class Start
 	final String piezoProj = "_piezo_avg.tif";
 	final String piezoStack = "_piezo.tif";
 	
-	public Start( final String baseDir, final String refDir, final int refIndex, final String templateDir, final int templateIndex, final boolean mirror ) throws FormatException, IOException
+	/**
+	 * 
+	 * @param baseDir - where is the data
+	 * @param refDir - the directory that contains the DNA stack of image 1 (reference)
+	 * @param refFileNameContent - content of the filename for the channel containing reference image (if both are in the same directory)
+	 * @param refIndex - which plane is image 1 (reference)
+	 * @param templateDir - the directory that contains the DNA stack of image 2 (template)
+	 * @param templateIndex - which plane is image 2
+	 * @param templateFileNameContent - content of the filename for the channel containing the reference image (if both are in the same directory) 
+	 * @param mirrorTemplate - mirror the template horizontally?
+	 * @throws FormatException
+	 * @throws IOException
+	 */
+	public Start( final File baseDir, final MicroscopyPlane referencePlane, final MicroscopyPlane templatePlane /*,
+				   final String refDir1, final String refFileNameContent, final int refIndex, 
+				   final String templateDir1, final String templateFileNameContent, final int templateIndex, 
+				   final boolean mirrorTemplate*/ ) throws FormatException, IOException
 	{
 		Image<FloatType> ref, template, refProjection, templateProjection;
 		
-		final File refFile = new File( baseDir, tmpName + refDir + "_" + refIndex + piezoStack );
-		final File refProjFile = new File( baseDir, tmpName + refDir + "_" + refIndex + piezoProj );
+		final File refFile = new File( baseDir, tmpName + referencePlane + piezoStack );
+		final File refProjFile = new File( baseDir, tmpName + referencePlane + piezoProj );
 		
-		final File templateFile = new File( baseDir, tmpName + templateDir + "_" + templateIndex + "-onto-" +  refDir + "_" + refIndex + piezoStack );
-		final File templateProjFile = new File( baseDir, tmpName + templateDir + "_" + templateIndex + "-onto-" +  refDir + "_" + refIndex + piezoProj );
+		final File templateFile = new File( baseDir, tmpName + templatePlane + "-onto-" + referencePlane + piezoStack );
+		final File templateProjFile = new File( baseDir, tmpName + templatePlane + "-onto-" + referencePlane + piezoProj );
+		
+		//System.out.println( "refFile: " + refFile );
+		//System.out.println( "refProjFile: " + refProjFile );
+		//System.out.println( "templateFile: " + templateFile );
+		//System.out.println( "templateProjFile: " + templateProjFile );
 		
 		if ( refFile.exists() && templateFile.exists() && refProjFile.exists() && templateProjFile.exists() )
 		{
@@ -86,12 +107,21 @@ public class Start
 			if ( refFile.exists() )
 				ref = LOCI.openLOCIFloatType( refFile.getAbsolutePath(), new ArrayContainerFactory() );
 			else
-				ref = ExtractPlane.extract( OpenPiezoStack.openPiezo( new File( baseDir, refDir ).getAbsolutePath() ), refIndex );
+				ref = ExtractPlane.extract( OpenPiezoStack.openPiezo( new File( baseDir, referencePlane.getDirectory() ).getAbsolutePath(), referencePlane.getName() ), referencePlane.getTileNumber() );
 			
-			template = ExtractPlane.extract( OpenPiezoStack.openPiezo( new File( baseDir, templateDir ).getAbsolutePath() ), templateIndex );
+			template = ExtractPlane.extract( OpenPiezoStack.openPiezo( new File( baseDir, templatePlane.getDirectory() ).getAbsolutePath(), templatePlane.getName() ), templatePlane.getTileNumber() );
 	
+			/*
+			ImageJFunctions.show( ref );
+			ImageJFunctions.show( template );			
+			SimpleMultiThreading.threadHaltUnClean();
+			*/
+
+			if ( referencePlane.getMirror() )
+				Mirror.horizontal( ref );
+
 			// mirror the npc
-			if ( mirror )
+			if ( templatePlane.getMirror() )
 				Mirror.horizontal( template );
 			
 			// do the average intensity projections
@@ -111,8 +141,8 @@ public class Start
 			{
 				IJ.log( "num inliers: " + numInliers );
 				IJ.log( "insufficient inliers (at least " + minNumInliers + " required), please check manually what is happening." );
-				ImageJFunctions.show( refProjection ).setTitle( "reference = " + refDir + "_" + refIndex + piezoStack );
-				ImageJFunctions.show( templateProjection ).setTitle( "template = " + templateDir + "_" + templateIndex + piezoProj );
+				ImageJFunctions.show( refProjection ).setTitle( "reference = " + referencePlane + piezoStack );
+				ImageJFunctions.show( templateProjection ).setTitle( "template = " + templatePlane + piezoProj );
 				
 				SimpleMultiThreading.threadHaltUnClean();
 				
@@ -133,15 +163,15 @@ public class Start
 			IJ.log( "num inliers:\t" + numInliers );
 			IJ.log( "cross correlation before alignment:\t" + r1 );
 			IJ.log( "cross correlation after alignment:\t" + r2 );
-			IJ.log( "model mapping template (" + templateDir + "_" + templateIndex + ") onto reference (" + refDir + "_" + refIndex + "):\t" + Descriptor_based_registration.lastModel1 );
+			IJ.log( "model mapping template (" + templatePlane + ") onto reference (" + referencePlane + "):\t" + Descriptor_based_registration.lastModel1 );
 
 			// write a small log file
-			PrintWriter out = TextFileAccess.openFileWrite( new File( baseDir,"log_image_registration_" + templateDir + "_" + templateIndex + "-onto-" + refDir + "_" + refIndex + ".txt" ) );
+			PrintWriter out = TextFileAccess.openFileWrite( new File( baseDir,"log_image_registration_" + templatePlane + "-onto-" + referencePlane + ".txt" ) );
 			
 			out.println( "num inliers:\t" + numInliers );
 			out.println( "cross correlation before alignment:\t" + r1 );
 			out.println( "cross correlation after alignment:\t" + r2 );
-			out.println( "model mapping template (" + templateDir + "_" + templateIndex + ") onto reference (" + refDir + "_" + refIndex + "):\t" + Descriptor_based_registration.lastModel1 );
+			out.println( "model mapping template (" + templatePlane + ") onto reference (" + referencePlane + "):\t" + Descriptor_based_registration.lastModel1 );
 			
 			out.close();
 
@@ -182,13 +212,13 @@ public class Start
 		CrossCorrelation.normalize( entropiesReference );
 		CrossCorrelation.normalize( entropiesTemplate );
 				
-		PrintWriter out = TextFileAccess.openFileWrite( new File( baseDir,"debug_z_registration_" + templateDir + "_" + templateIndex + "-onto-" + refDir + "_" + refIndex + ".txt" ) );
+		PrintWriter out = TextFileAccess.openFileWrite( new File( baseDir,"debug_z_registration_" + templatePlane + "-onto-" + referencePlane + ".txt" ) );
 		final float offset = Alignment.align1d( entropiesReference, entropiesTemplate, 1.4, 0.1, out );
 		out.close();
 		
 		out = TextFileAccess.appendFileWrite( new File( baseDir,"z_registration.txt" ) );
 		IJ.log( "offset [px]\t" + offset );
-		out.println( refDir + "_" + refIndex + "\t" + templateDir + "_" + templateIndex + "\t" + offset );
+		out.println( referencePlane + "\t" + templatePlane + "\t" + offset );
 		out.close();
 		/*
 		final Image< FloatType > alignedTemplate = Alignment.getAlignedSeries( DevUtil.createImageFromArray( entropiesTemplate, new int[]{ entropiesTemplate.length } ), offset );
@@ -290,16 +320,27 @@ public class Start
 	public static void main( String[] args ) throws FormatException, IOException
 	{
 		new ImageJ();
-		final int reference = 4;
+		final int referencePlaneIndex = 4;
 		
-		for ( int i = 0; i < 9; ++i )
+		final String baseDir = "/home/stephanpreibisch/Desktop/stephan/";
+		final String experimentDir = "1 (20110525, dish 2, cell 22)";
+		final String refChannelDir = "DNA stack";
+		final String refChannelTag ="green"; 
+		final String templateChannelDir = "DNA stack";
+		final String templateChannelTag ="red";
+		
+		//
+		// register the individual planes of both channels to one reference
+		//
+		
+		for ( int plane = 0; plane < 9; ++plane )
 		{
-			if ( i != reference )
-				new Start( "/Users/preibischs/Documents/Microscopy/david/sample 1/", "DNA stack mRNA", 4, "DNA stack mRNA", i, false );
+			if ( plane != referencePlaneIndex )
+				new Start( new File( baseDir, experimentDir ), refChannelDir, refChannelTag, referencePlaneIndex, refChannelDir, refChannelTag, plane, false );
 		}
-
-		for ( int i = 0; i < 9; ++i )
-			new Start( "/Users/preibischs/Documents/Microscopy/david/sample 1/", "DNA stack mRNA", 4, "DNA stack NPC", i, true );
+		
+		for ( int plane = 0; plane < 9; ++plane )
+			new Start(  new File( baseDir, experimentDir ), refChannelDir, refChannelTag, referencePlaneIndex, templateChannelDir, templateChannelTag, plane, true );
 
 	}
 

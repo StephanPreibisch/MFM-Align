@@ -60,6 +60,10 @@ public class MicroscopyPlane extends Tile< TranslationModel1D >
 		this.tileNumber = tileNumber;
 	}
 	
+	public String getDirectory() { return baseDir; }
+	public String getName() { return name; }
+	public boolean getMirror() { return mirror; }
+	
 	public void setImage( final Image< FloatType > image ) { this.image = image; }
 	public Image< FloatType > getImage() { return image; }
 
@@ -120,4 +124,9 @@ public class MicroscopyPlane extends Tile< TranslationModel1D >
 		return numRemoved;
 	}
 	
+	@Override
+	public String toString()
+	{
+		return name + "_" + baseDir + "_" + tileNumber;
+	}
 }

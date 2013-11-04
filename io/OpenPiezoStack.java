@@ -39,7 +39,7 @@ import mpicbg.imglib.util.Util;
 
 public class OpenPiezoStack 
 {
-	public static Image< FloatType > openPiezo( final String folder ) throws FormatException, IOException
+	public static Image< FloatType > openPiezo( final String folder, final String tag ) throws FormatException, IOException
 	{
 		final File dir = new File( folder );
 		
@@ -49,15 +49,17 @@ public class OpenPiezoStack
 			final String[] files = dir.list( new FilenameFilter() 
 			{	
 				@Override
-				public boolean accept( final File dir, final String name) 
+				public boolean accept( final File dir, final String name ) 
 				{
 					final File newFile = new File( dir, name );
 					
 					// ignore directories and hidden files
 					if ( newFile.isHidden() || newFile.isDirectory() )
 						return false;
-					else
+					else if ( name.contains( tag ) )
 						return true;
+					else
+						return false;
 				}
 			});
 			
