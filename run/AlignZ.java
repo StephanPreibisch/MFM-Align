@@ -37,7 +37,6 @@ import mpicbg.imglib.container.array.ArrayContainerFactory;
 import mpicbg.imglib.image.Image;
 import mpicbg.imglib.image.display.imagej.ImageJFunctions;
 import mpicbg.imglib.io.LOCI;
-import mpicbg.imglib.multithreading.SimpleMultiThreading;
 import mpicbg.imglib.outofbounds.OutOfBoundsStrategyMirrorFactory;
 import mpicbg.imglib.type.numeric.real.FloatType;
 import mpicbg.models.IllDefinedDataPointsException;
@@ -50,22 +49,20 @@ import process.AutoFocus;
 import process.ComputeEntropy;
 import process.CrossCorrelation;
 import process.Mirror;
+import run.MicroscopyPlane.Mirroring;
 
 public class AlignZ 
 {
 	final ArrayList< MicroscopyPlane > planes;
-	final HashMap< String, Image<FloatType> > piezoStacks = new HashMap<String, Image<FloatType>>();	
+	final HashMap< String, Image<FloatType> > allPiezoStacks = new HashMap<String, Image<FloatType>>();	
 	
-	public AlignZ( final String baseDir, final String[] names, final boolean[] mirror ) throws FormatException, IOException, NotEnoughDataPointsException, IllDefinedDataPointsException
+	public AlignZ( final ArrayList< MicroscopyPlane > planes ) throws FormatException, IOException, NotEnoughDataPointsException, IllDefinedDataPointsException
+	//final String baseDir, final String[] names, final boolean[] mirror ) throws FormatException, IOException, NotEnoughDataPointsException, IllDefinedDataPointsException
 	{
 		//
 		// set up the planes
 		// 	
-		planes = new ArrayList< MicroscopyPlane >();
-		
-		for ( int c = 0; c < names.length; ++c )
-			for ( int t = 0; t < AlignProperties.numTiles; ++t )
-				planes.add( new MicroscopyPlane( baseDir, names[ c ], mirror[ c ], t ) );
+		this.planes = planes;
 		
 		//
 		// Compute all pairwise matches
@@ -77,12 +74,13 @@ public class AlignZ
 			{
 				if ( planeA != planeB )
 				{
-					final float offset = computePairwiseAlignment( baseDir, planeA, planeB );
+					final float offset = computePairwiseAlignment( planeA, planeB );
 					
-					if ( planeB.name.equals( planeA.name ) )
-						planeA.offsets1.add( new PlaneOffset( planeB, offset ) );
+					// if it is from the same channel
+					if ( planeB.getTagName().equals( planeA.getTagName() ) )
+						planeA.offsetsSameChannel.add( new PlaneOffset( planeB, offset ) );
 					else
-						planeA.offsets2.add( new PlaneOffset( planeB, offset ) );					
+						planeA.offsetsOtherChannel.add( new PlaneOffset( planeB, offset ) );					
 				}
 			}
 			
@@ -91,21 +89,21 @@ public class AlignZ
 			//for ( final PlaneOffset planeOffset : planeA.offsets1 )
 			//	System.out.println( "same " + planeA.name + " " + planeA.tileNumber + " <-> " + planeOffset.plane.name + " " + planeOffset.plane.tileNumber + " = " + planeOffset.offset );
 
-			int numRemoved = MicroscopyPlane.removeOutliers( planeA.offsets1, AlignProperties.epsilon, AlignProperties.minInlierRatio );
-			System.out.println( "same " + planeA.name + " " + planeA.tileNumber + " -> removed " + numRemoved );
+			int numRemoved = MicroscopyPlane.removeOutliers( planeA.offsetsSameChannel, AlignProperties.epsilon, AlignProperties.minInlierRatio );
+			System.out.println( "same " + planeA.getFullName() + " " + planeA.tileNumber + " -> removed " + numRemoved );
 			
 			//for ( final PlaneOffset planeOffset : planeA.offsets2 )
 			//	System.out.println( "diff " + planeA.name + " " + planeA.tileNumber + " <-> " + planeOffset.plane.name + " " + planeOffset.plane.tileNumber + " = " + planeOffset.offset );
 
-			numRemoved = MicroscopyPlane.removeOutliers( planeA.offsets2, AlignProperties.epsilon, AlignProperties.minInlierRatio );
-			System.out.println( "diff " + planeA.name + " " + planeA.tileNumber + " -> removed " + numRemoved );
+			numRemoved = MicroscopyPlane.removeOutliers( planeA.offsetsOtherChannel, AlignProperties.epsilon, AlignProperties.minInlierRatio );
+			System.out.println( "diff " + planeA.getFullName() + " " + planeA.tileNumber + " -> removed " + numRemoved );
 			
 			//for ( final PlaneOffset planeOffset : planeA.offsets2 )
 			//	System.out.println( "diff " + planeA.name + " " + planeA.tileNumber + " <-> " + planeOffset.plane.name + " " + planeOffset.plane.tileNumber + " = " + planeOffset.offset );
 
 			final ArrayList< PlaneOffset > allPlanes = new ArrayList<PlaneOffset>();
-			allPlanes.addAll( planeA.offsets1 );
-			allPlanes.addAll( planeA.offsets2 );
+			allPlanes.addAll( planeA.offsetsSameChannel );
+			allPlanes.addAll( planeA.offsetsOtherChannel );
 			
 			// add them to the tile configuration
 			for ( final PlaneOffset offset : allPlanes )
@@ -135,15 +133,15 @@ public class AlignZ
 		System.out.println( avgError  + " " + maxError );
 		*/
 		
-		PrintWriter out = TextFileAccess.openFileWrite( new File( baseDir, "_zPositions.txt" ) );
+		PrintWriter out = TextFileAccess.openFileWrite( new File( planes.get( 0 ).getBaseDirectory(), "_zPositions.txt" ) );
 		
 		for ( final MicroscopyPlane plane : planes )
 		{
-			System.out.println( "Plane " + plane.tileNumber + " of " + plane.name + " <-\t" + plane.getModel().tx );
-			out.println( "Plane " + plane.tileNumber + " of " + plane.name + " <-\t" + plane.getModel().tx );
+			System.out.println( "Plane " + plane.getFullName() + " <-\t" + plane.getModel().tx );
+			out.println( "Plane " + plane.getFullName() + " <-\t" + plane.getModel().tx );
 			
 			if ( Align.outAllZ != null )
-				Align.outAllZ.println( baseDir + "\t" + plane.name + "\t" + plane.tileNumber + "\t" + plane.getModel().tx );
+				Align.outAllZ.println( planes.get( 0 ).getBaseDirectory() + "\t" + plane.getFullName() + "\t" + plane.tileNumber + "\t" + plane.getModel().tx );
 		}
 
 		if ( Align.outAllZ != null )
@@ -154,49 +152,40 @@ public class AlignZ
 	
 	public ArrayList< MicroscopyPlane > getPlanes() { return planes; }
 	
-	public float computePairwiseAlignment( final String baseDir, final MicroscopyPlane refPlane, final MicroscopyPlane templatePlane ) throws FormatException, IOException
+	public float computePairwiseAlignment( final MicroscopyPlane refPlane, final MicroscopyPlane templatePlane ) throws FormatException, IOException
 	{
-		final String refDir = refPlane.name;
-		final int refIndex = refPlane.tileNumber;
-		final boolean mirrorRef = refPlane.mirror;
-		
-		final String templateDir = templatePlane.name;
-		final int templateIndex = templatePlane.tileNumber; 
-		final boolean mirrorTemplate = templatePlane.mirror;
-		
 		Image<FloatType> ref, template;
 		
 		float[] entropiesReference, entropiesTemplate;
 		
-		final File refFile = new File( baseDir, AlignProperties.tmpName + refDir + "_" + refIndex + AlignProperties.piezoStack );
-		final File refEntropiesFile = new File( baseDir, AlignProperties.tmpName + refDir + "_" + refIndex + AlignProperties.entropies );
-		final File templateFile = new File( baseDir, AlignProperties.tmpName + templateDir + "_"  + templateIndex + AlignProperties.piezoStack );
-		final File templateEntropiesFile = new File( baseDir, AlignProperties.tmpName + templateDir + "_" + templateIndex + AlignProperties.entropies );
+		final File refFile = new File( refPlane.getBaseDirectory(), AlignProperties.tmpName + refPlane.getFullName() + AlignProperties.piezoStack );
+		final File refEntropiesFile = new File( refPlane.getBaseDirectory(), AlignProperties.tmpName + refPlane.getFullName() + AlignProperties.entropies );
+		final File templateFile = new File( templatePlane.getBaseDirectory(), AlignProperties.tmpName + templatePlane.getFullName() + AlignProperties.piezoStack );
+		final File templateEntropiesFile = new File( templatePlane.getBaseDirectory(), AlignProperties.tmpName + templatePlane.getFullName() + AlignProperties.entropies );
 
+		// try to load the entropies
 		if ( !refEntropiesFile.exists() )
 		{
+			// try to load the raw dna stack per plane 
 			if ( refFile.exists() )
 			{
 				ref = LOCI.openLOCIFloatType( refFile.getAbsolutePath(), new ArrayContainerFactory() );
 			}
 			else
 			{
-				final Image< FloatType > tmp = piezoStacks.get( refDir );
-				if ( tmp == null )
+				// do not open the huge image (containing 9 planes) for every new tile that we extract
+				if ( ( ref = allPiezoStacks.get( refPlane.getTagName() ) ) == null )
 				{
-					ref = OpenPiezoStack.openPiezo( new File( baseDir, refDir ).getAbsolutePath() );
-					if ( mirrorRef )
+					ref = OpenPiezoStack.openPiezo( new File( refPlane.getBaseDirectory(), refPlane.getLocalDirectory() ), refPlane.getTagName() );
+
+					if ( refPlane.getMirror() == Mirroring.HORIZONTALLY )
 						Mirror.horizontal( ref );
-					
-					piezoStacks.put( refDir, ref.clone() );
-				}
-				else
-				{
-					ref = tmp;
+
+					allPiezoStacks.put( refPlane.getTagName(), ref.clone() );
 				}
 
-				ref = ExtractPlane.extract( ref, refIndex );
-				
+				ref = ExtractPlane.extract( ref, refPlane.getTileNumber() );
+								
 				// save the extracted stack
 				FileSaver fs = new FileSaver( ImageJFunctions.copyToImagePlus( ref ) );
 				fs.saveAsTiffStack( refFile.getAbsolutePath() );
@@ -244,21 +233,17 @@ public class AlignZ
 			}
 			else
 			{
-				final Image< FloatType > tmp = piezoStacks.get( templateDir );
-				if ( tmp == null )
+				if ( ( template = allPiezoStacks.get( templatePlane.getTagName() ) ) == null )
 				{
-					template = OpenPiezoStack.openPiezo( new File( baseDir, templateDir ).getAbsolutePath() );
+					template = OpenPiezoStack.openPiezo( new File( templatePlane.getBaseDirectory(), templatePlane.getLocalDirectory() ), templatePlane.getTagName() );
 						
-					if ( mirrorTemplate )
+					if ( templatePlane.getMirror() == Mirroring.HORIZONTALLY )
 						Mirror.horizontal( template );
 					
-					piezoStacks.put( templateDir, template.clone() );
+					allPiezoStacks.put( templatePlane.getTagName(), template.clone() );
 				}
-				else
-				{
-					template = tmp;
-				}
-				template = ExtractPlane.extract( template, templateIndex );
+
+				template = ExtractPlane.extract( template, templatePlane.getTileNumber() );
 				
 				// save the stack
 				FileSaver fs = new FileSaver( ImageJFunctions.copyToImagePlus( template ) );
@@ -298,15 +283,15 @@ public class AlignZ
 		//out.close();
 		
 		//IJ.log( "offset [px]\t" + offset );
-		out = TextFileAccess.appendFileWrite( new File( baseDir,"z_registration.txt" ) );
-		out.println( refDir + "_" + refIndex + "\t" + templateDir + "_" + templateIndex + "\t" + offset );
+		out = TextFileAccess.appendFileWrite( new File( refPlane.getBaseDirectory() ,"z_registration.txt" ) );
+		out.println( refPlane.getFullName() + "\t" + templatePlane.getFullName() + "\t" + offset );
 		out.close();
 		
 		
 		final Image< FloatType > alignedTemplate = Alignment.getAlignedSeries( Alignment.createImageFromArray( entropiesTemplate, new int[]{ entropiesTemplate.length } ), offset );
 		
 		// write a small log file
-		out = TextFileAccess.openFileWrite( new File( baseDir,"values_z_registration_" + templateDir + "_" + templateIndex + "-onto-" + refDir + "_" + refIndex + ".txt" ) );
+		out = TextFileAccess.openFileWrite( new File( refPlane.getBaseDirectory(), "values_z_registration_" + templatePlane.getFullName() + "-onto-" + refPlane.getFullName() + ".txt" ) );
 		out.println( "ref_entropy" + "\t" + "template_entropy" + "\t" + "template_adjusted" );
 					
 		int i = 0;
@@ -353,10 +338,24 @@ public class AlignZ
 	{
 		new ImageJ();
 		
-		final String[] names = new String[]{ "DNA stack mRNA", "DNA stack NPC" };
-		final boolean[] mirror = new boolean[]{ true, false };
+		final String root = "/home/stephanpreibisch/Desktop/stephan/";
+		final String experimentDir = "1 (20110525, dish 2, cell 22)";
 		
-		new AlignZ( "/Users/preibischs/Documents/Microscopy/david/sample 1/", names, mirror );
+		final String localDir = "DNA stack";
+		
+		final String[] tags = new String[] { "green", "red" };
+		final Mirroring[] mirror = new Mirroring[]{ Mirroring.HORIZONTALLY, Mirroring.DONOT };
+		
+		//
+		// set up the planes
+		// 	
+		final ArrayList< MicroscopyPlane > planes = new ArrayList< MicroscopyPlane >();
+		
+		for ( int c = 0; c < tags.length; ++c )
+			for ( int t = 0; t < AlignProperties.numTiles; ++t )
+				planes.add( new MicroscopyPlane( root + experimentDir, localDir, tags[ c ], mirror[ c ], t ) );
+		
+		new AlignZ( planes );
 	}
 
 }

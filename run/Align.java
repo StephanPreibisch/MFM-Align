@@ -338,7 +338,7 @@ public class Align
 		}
 	}
 	
-	public static void alignAll(String baseDir) throws Exception
+	public static void alignAll( final String baseDir ) throws Exception
 	{
 		final String[] names = new String[]{ "DNA stack mRNA", "DNA stack NPC" };
 		final boolean[] mirror = new boolean[]{ true, false };

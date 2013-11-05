@@ -36,7 +36,6 @@ import mpicbg.imglib.container.array.ArrayContainerFactory;
 import mpicbg.imglib.image.Image;
 import mpicbg.imglib.image.display.imagej.ImageJFunctions;
 import mpicbg.imglib.io.LOCI;
-import mpicbg.imglib.multithreading.SimpleMultiThreading;
 import mpicbg.imglib.type.numeric.real.FloatType;
 import mpicbg.models.IllDefinedDataPointsException;
 import mpicbg.models.NotEnoughDataPointsException;
@@ -53,6 +52,14 @@ public class AlignXY
 {
 	final ArrayList< MicroscopyPlane > planes;
 	
+	/**
+	 * Makes the max projections for all {@link MicroscopyPlane}s, alignes them and stores the transformation model in the
+	 * {@link MicroscopyPlane} object.
+	 * 
+	 * @param planes
+	 * @throws FormatException
+	 * @throws IOException
+	 */
 	public AlignXY( final ArrayList< MicroscopyPlane > planes ) throws FormatException, IOException
 	{
 		this.planes = planes;
@@ -68,7 +75,7 @@ public class AlignXY
 		ImageStack planeStack = null;
 		for ( final MicroscopyPlane plane : planes )
 		{
-			final Image< FloatType > image = getImagePiezo( plane );
+			final Image< FloatType > image = plane.getImagePiezo();
 			final Image< FloatType > planeImg = AvgProjection3.project( image );
 			
 			// store the images
@@ -85,8 +92,8 @@ public class AlignXY
 		// make it a timelapse and not a stack
 		stack = OverlayFusion.switchZTinXYCZT( stack );
 
-		stack.getProcessor().resetMinAndMax();
-		stack.show();
+		//stack.getProcessor().resetMinAndMax();
+		//stack.show();
 		//SimpleMultiThreading.threadHaltUnClean();
 		
 		// compute the per-plane registration
@@ -109,46 +116,6 @@ public class AlignXY
 			Align.outAllXY.flush();
 		
 		out.close();
-	}
-
-	/**
-	 * It looks if this file has been already converted from the slices in the directory into its own file, if so it just loads it
-	 * 
-	 * @param baseDir - base directory of the MFM experiment
-	 * @param dir - the directory that contains all the individual slices of the piezo DNA stack
-	 * @param fileNameTag - if multiple channels are in the directory a String that selects for the current channel (e.g. green)
-	 * @param index - which of the tiles to load (0...8)
-	 * @param mirror - mirror the image or not
-	 * @return
-	 * @throws FormatException
-	 * @throws IOException
-	 */
-	//public Image<FloatType> getImagePiezo( final String baseDir, final String dir, final String fileNameTag, final int index, final Mirroring mirror ) throws FormatException, IOException
-	public Image<FloatType> getImagePiezo( final MicroscopyPlane plane ) throws FormatException, IOException
-	{	
-		Image<FloatType> image;
-		
-		final File file = new File( plane.getBaseDirectory(), AlignProperties.tmpName + plane.getFullName() + AlignProperties.piezoStack );
-				
-		// load or create the 3d-stack
-		if ( file.exists() )
-		{
-			image = LOCI.openLOCIFloatType( file.getAbsolutePath(), new ArrayContainerFactory() );
-		}
-		else
-		{
-			image = OpenPiezoStack.openPiezo( new File( plane.getBaseDirectory(), plane.getLocalDirectory() ), plane.getTagName() );
-			if ( plane.getMirror() == Mirroring.HORIZONTALLY )
-				Mirror.horizontal( image );
-			image = ExtractPlane.extract( image, plane.getTileNumber() );
-			
-			// save the extracted stack
-			FileSaver fs = new FileSaver( ImageJFunctions.copyToImagePlus( image ) );
-			fs.saveAsTiffStack( file.getAbsolutePath() );
-		}
-		
-		// load or create the average-projection
-		return image;
 	}
 
 	protected DescriptorParameters getParametersForProjection()

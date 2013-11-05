@@ -18,7 +18,6 @@
  */
 package io;
 import ij.IJ;
-import ij.ImageJ;
 
 import java.io.File;
 import java.io.FilenameFilter;
@@ -31,10 +30,8 @@ import mpicbg.imglib.cursor.LocalizableByDimCursor;
 import mpicbg.imglib.cursor.LocalizableCursor;
 import mpicbg.imglib.image.Image;
 import mpicbg.imglib.image.ImageFactory;
-import mpicbg.imglib.image.display.imagej.ImageJFunctions;
 import mpicbg.imglib.io.ImageOpener;
 import mpicbg.imglib.type.numeric.real.FloatType;
-import mpicbg.imglib.util.Util;
 
 
 public class OpenPiezoStack 

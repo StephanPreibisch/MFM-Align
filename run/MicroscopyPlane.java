@@ -18,19 +18,27 @@
  */
 package run;
 
+import ij.io.FileSaver;
+import io.ExtractPlane;
+import io.OpenPiezoStack;
+
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 
+import process.Mirror;
+import loci.formats.FormatException;
+import mpicbg.imglib.container.array.ArrayContainerFactory;
+import mpicbg.imglib.image.Image;
+import mpicbg.imglib.image.display.imagej.ImageJFunctions;
+import mpicbg.imglib.io.LOCI;
+import mpicbg.imglib.type.numeric.real.FloatType;
+import mpicbg.models.InvertibleBoundable;
+import mpicbg.models.Tile;
 import fit.Line;
 import fit.LinkedPoint;
 import fit.PointFunctionMatch;
 import fit.TranslationModel1D;
-import mpicbg.imglib.image.Image;
-import mpicbg.imglib.type.numeric.real.FloatType;
-import mpicbg.models.IllDefinedDataPointsException;
-import mpicbg.models.InvertibleBoundable;
-import mpicbg.models.NotEnoughDataPointsException;
-import mpicbg.models.Point;
-import mpicbg.models.Tile;
 
 public class MicroscopyPlane extends Tile< TranslationModel1D >
 {
@@ -47,11 +55,20 @@ public class MicroscopyPlane extends Tile< TranslationModel1D >
 	public Image< FloatType > referenceStack = null;
 	
 	// offsets within the same channel
-	final ArrayList< PlaneOffset > offsets1 = new ArrayList< PlaneOffset >();
+	final ArrayList< PlaneOffset > offsetsSameChannel = new ArrayList< PlaneOffset >();
 				
 	// offsets within the other channel
-	final ArrayList< PlaneOffset > offsets2 = new ArrayList< PlaneOffset >();
-				
+	final ArrayList< PlaneOffset > offsetsOtherChannel = new ArrayList< PlaneOffset >();
+		
+	/**
+	 * Instantiate a new {@link MicroscopyPlane} object
+	 * 
+	 * @param baseDir - base directory of the MFM experiment
+	 * @param dirname - the directory that contains all the individual slices of the piezo DNA stack
+	 * @param tag - if multiple channels are in the directory a String that selects for the current channel (e.g. green)
+	 * @param mirror - mirror the image or not
+	 * @param tileNumber - which of the tiles to load (0...8)
+	 */
 	public MicroscopyPlane( final String baseDir, final String dirname, final String tag, final Mirroring mirror, final int tileNumber )
 	{
 		super( new TranslationModel1D() );
@@ -133,5 +150,39 @@ public class MicroscopyPlane extends Tile< TranslationModel1D >
 	public String toString()
 	{
 		return getFullName();
+	}
+	
+	public Image<FloatType> getImagePiezo() throws FormatException, IOException
+	{
+		return getImagePiezo( this );
+	}
+	
+	public static Image<FloatType> getImagePiezo( final MicroscopyPlane plane ) throws FormatException, IOException
+	{	
+		Image<FloatType> image;
+		
+		final File file = new File( plane.getBaseDirectory(), AlignProperties.tmpName + plane.getFullName() + AlignProperties.piezoStack );
+				
+		// load or create the 3d-stack
+		if ( file.exists() )
+		{
+			image = LOCI.openLOCIFloatType( file.getAbsolutePath(), new ArrayContainerFactory() );
+		}
+		else
+		{
+			image = OpenPiezoStack.openPiezo( new File( plane.getBaseDirectory(), plane.getLocalDirectory() ), plane.getTagName() );
+			
+			if ( plane.getMirror() == Mirroring.HORIZONTALLY )
+				Mirror.horizontal( image );
+			
+			image = ExtractPlane.extract( image, plane.getTileNumber() );
+			
+			// save the extracted stack
+			FileSaver fs = new FileSaver( ImageJFunctions.copyToImagePlus( image ) );
+			fs.saveAsTiffStack( file.getAbsolutePath() );
+		}
+		
+		// load or create the average-projection
+		return image;
 	}
 }

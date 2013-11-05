@@ -112,6 +112,10 @@ public class Start
 			
 			template = ExtractPlane.extract( OpenPiezoStack.openPiezo( new File( templatePlane.getBaseDirectory(), templatePlane.getLocalDirectory() ), templatePlane.getTagName() ), templatePlane.getTileNumber() );
 	
+			//
+			// TODO: This is wrong and mixes up the order! It should be mirrored first and then extracted
+			//
+			
 			/*
 			ImageJFunctions.show( ref );
 			ImageJFunctions.show( template );			
