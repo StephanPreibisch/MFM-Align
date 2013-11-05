@@ -85,8 +85,9 @@ public class AlignXY
 		// make it a timelapse and not a stack
 		stack = OverlayFusion.switchZTinXYCZT( stack );
 
+		stack.getProcessor().resetMinAndMax();
 		stack.show();
-		SimpleMultiThreading.threadHaltUnClean();
+		//SimpleMultiThreading.threadHaltUnClean();
 		
 		// compute the per-plane registration
 		// of NPC and mRNA
