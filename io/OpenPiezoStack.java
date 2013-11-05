@@ -39,10 +39,8 @@ import mpicbg.imglib.util.Util;
 
 public class OpenPiezoStack 
 {
-	public static Image< FloatType > openPiezo( final String folder, final String tag ) throws FormatException, IOException
+	public static Image< FloatType > openPiezo( final File dir, final String tag ) throws FormatException, IOException
 	{
-		final File dir = new File( folder );
-		
 		// read many 2d-images if it is a directory
 		if ( dir.isDirectory() )
 		{

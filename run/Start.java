@@ -54,6 +54,7 @@ import process.CrossCorrelation;
 import process.Matching;
 import process.Mirror;
 import process.OverlayFusion;
+import run.MicroscopyPlane.Mirroring;
 
 public class Start 
 {
@@ -76,23 +77,23 @@ public class Start
 	 * @throws FormatException
 	 * @throws IOException
 	 */
-	public Start( final File baseDir, final MicroscopyPlane referencePlane, final MicroscopyPlane templatePlane /*,
+	public Start( final MicroscopyPlane referencePlane, final MicroscopyPlane templatePlane /*,
 				   final String refDir1, final String refFileNameContent, final int refIndex, 
 				   final String templateDir1, final String templateFileNameContent, final int templateIndex, 
 				   final boolean mirrorTemplate*/ ) throws FormatException, IOException
 	{
 		Image<FloatType> ref, template, refProjection, templateProjection;
 		
-		final File refFile = new File( baseDir, tmpName + referencePlane + piezoStack );
-		final File refProjFile = new File( baseDir, tmpName + referencePlane + piezoProj );
+		final File refFile = new File( referencePlane.getBaseDirectory(), tmpName + referencePlane + piezoStack );
+		final File refProjFile = new File( referencePlane.getBaseDirectory(), tmpName + referencePlane + piezoProj );
 		
-		final File templateFile = new File( baseDir, tmpName + templatePlane + "-onto-" + referencePlane + piezoStack );
-		final File templateProjFile = new File( baseDir, tmpName + templatePlane + "-onto-" + referencePlane + piezoProj );
+		final File templateFile = new File( templatePlane.getBaseDirectory(), tmpName + templatePlane + "-onto-" + referencePlane + piezoStack );
+		final File templateProjFile = new File( templatePlane.getBaseDirectory(), tmpName + templatePlane + "-onto-" + referencePlane + piezoProj );
 		
-		//System.out.println( "refFile: " + refFile );
-		//System.out.println( "refProjFile: " + refProjFile );
-		//System.out.println( "templateFile: " + templateFile );
-		//System.out.println( "templateProjFile: " + templateProjFile );
+		System.out.println( "refFile: " + refFile );
+		System.out.println( "refProjFile: " + refProjFile );
+		System.out.println( "templateFile: " + templateFile );
+		System.out.println( "templateProjFile: " + templateProjFile );
 		
 		if ( refFile.exists() && templateFile.exists() && refProjFile.exists() && templateProjFile.exists() )
 		{
@@ -107,9 +108,9 @@ public class Start
 			if ( refFile.exists() )
 				ref = LOCI.openLOCIFloatType( refFile.getAbsolutePath(), new ArrayContainerFactory() );
 			else
-				ref = ExtractPlane.extract( OpenPiezoStack.openPiezo( new File( baseDir, referencePlane.getDirectory() ).getAbsolutePath(), referencePlane.getName() ), referencePlane.getTileNumber() );
+				ref = ExtractPlane.extract( OpenPiezoStack.openPiezo( new File( referencePlane.getBaseDirectory(), referencePlane.getLocalDirectory() ), referencePlane.getTagName() ), referencePlane.getTileNumber() );
 			
-			template = ExtractPlane.extract( OpenPiezoStack.openPiezo( new File( baseDir, templatePlane.getDirectory() ).getAbsolutePath(), templatePlane.getName() ), templatePlane.getTileNumber() );
+			template = ExtractPlane.extract( OpenPiezoStack.openPiezo( new File( templatePlane.getBaseDirectory(), templatePlane.getLocalDirectory() ), templatePlane.getTagName() ), templatePlane.getTileNumber() );
 	
 			/*
 			ImageJFunctions.show( ref );
@@ -117,11 +118,11 @@ public class Start
 			SimpleMultiThreading.threadHaltUnClean();
 			*/
 
-			if ( referencePlane.getMirror() )
+			if ( referencePlane.getMirror() == Mirroring.HORIZONTALLY )
 				Mirror.horizontal( ref );
 
 			// mirror the npc
-			if ( templatePlane.getMirror() )
+			if ( templatePlane.getMirror() == Mirroring.HORIZONTALLY )
 				Mirror.horizontal( template );
 			
 			// do the average intensity projections
@@ -166,7 +167,7 @@ public class Start
 			IJ.log( "model mapping template (" + templatePlane + ") onto reference (" + referencePlane + "):\t" + Descriptor_based_registration.lastModel1 );
 
 			// write a small log file
-			PrintWriter out = TextFileAccess.openFileWrite( new File( baseDir,"log_image_registration_" + templatePlane + "-onto-" + referencePlane + ".txt" ) );
+			PrintWriter out = TextFileAccess.openFileWrite( new File( referencePlane.getBaseDirectory(),"log_image_registration_" + templatePlane + "-onto-" + referencePlane + ".txt" ) );
 			
 			out.println( "num inliers:\t" + numInliers );
 			out.println( "cross correlation before alignment:\t" + r1 );
@@ -212,11 +213,11 @@ public class Start
 		CrossCorrelation.normalize( entropiesReference );
 		CrossCorrelation.normalize( entropiesTemplate );
 				
-		PrintWriter out = TextFileAccess.openFileWrite( new File( baseDir,"debug_z_registration_" + templatePlane + "-onto-" + referencePlane + ".txt" ) );
+		PrintWriter out = TextFileAccess.openFileWrite( new File( referencePlane.getBaseDirectory(),"debug_z_registration_" + templatePlane + "-onto-" + referencePlane + ".txt" ) );
 		final float offset = Alignment.align1d( entropiesReference, entropiesTemplate, 1.4, 0.1, out );
 		out.close();
 		
-		out = TextFileAccess.appendFileWrite( new File( baseDir,"z_registration.txt" ) );
+		out = TextFileAccess.appendFileWrite( new File( referencePlane.getBaseDirectory(),"z_registration.txt" ) );
 		IJ.log( "offset [px]\t" + offset );
 		out.println( referencePlane + "\t" + templatePlane + "\t" + offset );
 		out.close();
@@ -332,16 +333,23 @@ public class Start
 		//
 		// register the individual planes of both channels to one reference
 		//
-		
+
+		final MicroscopyPlane referencePlane = new MicroscopyPlane( new File( baseDir, experimentDir ).getAbsolutePath(), refChannelDir, refChannelTag, Mirroring.DONOT, referencePlaneIndex );
+
 		for ( int plane = 0; plane < 9; ++plane )
 		{
 			if ( plane != referencePlaneIndex )
-				new Start( new File( baseDir, experimentDir ), refChannelDir, refChannelTag, referencePlaneIndex, refChannelDir, refChannelTag, plane, false );
+			{
+				final MicroscopyPlane templatePlane = new MicroscopyPlane( new File( baseDir, experimentDir ).getAbsolutePath(), refChannelDir, refChannelTag, Mirroring.DONOT, plane );	
+				new Start( referencePlane, templatePlane );
+			}
 		}
 		
 		for ( int plane = 0; plane < 9; ++plane )
-			new Start(  new File( baseDir, experimentDir ), refChannelDir, refChannelTag, referencePlaneIndex, templateChannelDir, templateChannelTag, plane, true );
-
+		{
+			final MicroscopyPlane templatePlane = new MicroscopyPlane( new File( baseDir, experimentDir ).getAbsolutePath(), templateChannelDir, templateChannelTag, Mirroring.HORIZONTALLY, plane );	
+			new Start( referencePlane, templatePlane );
+		}
 	}
 
 }

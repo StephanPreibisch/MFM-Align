@@ -34,9 +34,11 @@ import mpicbg.models.Tile;
 
 public class MicroscopyPlane extends Tile< TranslationModel1D >
 {
+	public static enum Mirroring { DONOT, HORIZONTALLY };
+	
 	final String baseDir;
-	String name;
-	final boolean mirror;
+	String dirname, tag;
+	final Mirroring mirror;
 	final int tileNumber;
 	
 	Image< FloatType > image = null, avgProj = null;
@@ -50,19 +52,22 @@ public class MicroscopyPlane extends Tile< TranslationModel1D >
 	// offsets within the other channel
 	final ArrayList< PlaneOffset > offsets2 = new ArrayList< PlaneOffset >();
 				
-	public MicroscopyPlane( final String baseDir, final String name, final boolean mirror, final int tileNumber )
+	public MicroscopyPlane( final String baseDir, final String dirname, final String tag, final Mirroring mirror, final int tileNumber )
 	{
 		super( new TranslationModel1D() );
 		
 		this.baseDir = baseDir;
-		this.name = name;
+		this.dirname = dirname;
+		this.tag = tag;
 		this.mirror = mirror;
 		this.tileNumber = tileNumber;
 	}
 	
-	public String getDirectory() { return baseDir; }
-	public String getName() { return name; }
-	public boolean getMirror() { return mirror; }
+	public String getBaseDirectory() { return baseDir; }
+	public String getFullName() { return tag + "_" + dirname + "_" + tileNumber; }
+	public String getLocalDirectory() { return dirname; }
+	public String getTagName() { return tag; }
+	public Mirroring getMirror() { return mirror; }
 	
 	public void setImage( final Image< FloatType > image ) { this.image = image; }
 	public Image< FloatType > getImage() { return image; }
@@ -127,6 +132,6 @@ public class MicroscopyPlane extends Tile< TranslationModel1D >
 	@Override
 	public String toString()
 	{
-		return name + "_" + baseDir + "_" + tileNumber;
+		return getFullName();
 	}
 }

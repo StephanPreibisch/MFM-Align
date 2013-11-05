@@ -18,12 +18,10 @@
  */
 package run;
 
-import ij.CompositeImage;
 import ij.ImageJ;
 import ij.ImagePlus;
 import ij.ImageStack;
 import ij.io.FileSaver;
-import ij.process.FloatProcessor;
 import io.ExtractPlane;
 import io.OpenPiezoStack;
 import io.TextFileAccess;
@@ -34,16 +32,11 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 
 import loci.formats.FormatException;
-import mpicbg.imglib.container.array.Array;
 import mpicbg.imglib.container.array.ArrayContainerFactory;
-import mpicbg.imglib.container.basictypecontainer.array.FloatArray;
 import mpicbg.imglib.image.Image;
-import mpicbg.imglib.image.ImageFactory;
 import mpicbg.imglib.image.display.imagej.ImageJFunctions;
-import mpicbg.imglib.interpolation.linear.LinearInterpolatorFactory;
 import mpicbg.imglib.io.LOCI;
 import mpicbg.imglib.multithreading.SimpleMultiThreading;
-import mpicbg.imglib.outofbounds.OutOfBoundsStrategyMirrorFactory;
 import mpicbg.imglib.type.numeric.real.FloatType;
 import mpicbg.models.IllDefinedDataPointsException;
 import mpicbg.models.NotEnoughDataPointsException;
@@ -51,10 +44,10 @@ import mpicbg.models.RigidModel2D;
 import plugin.DescriptorParameters;
 import plugin.Descriptor_based_series_registration;
 import process.AvgProjection3;
-import process.CrossCorrelation;
 import process.Matching;
 import process.Mirror;
 import process.OverlayFusion;
+import run.MicroscopyPlane.Mirroring;
 
 public class AlignXY 
 {
@@ -67,20 +60,6 @@ public class AlignXY
 		align();
 	}
 	
-	public AlignXY( final String baseDir, final String[] names, final boolean[] mirror ) throws FormatException, IOException
-	{
-		//
-		// set up the planes
-		// 	
-		planes = new ArrayList< MicroscopyPlane >();
-		
-		for ( int c = 0; c < names.length; ++c )
-			for ( int t = 0; t < AlignProperties.numTiles; ++t )
-				planes.add( new MicroscopyPlane( baseDir, names[ c ], mirror[ c ], t ) );
-		
-		align();
-	}
-	
 	public void align() throws FormatException, IOException
 	{
 		//
@@ -89,7 +68,7 @@ public class AlignXY
 		ImageStack planeStack = null;
 		for ( final MicroscopyPlane plane : planes )
 		{
-			final Image< FloatType > image = getImage( plane.baseDir, plane.name, plane.tileNumber, plane.mirror );
+			final Image< FloatType > image = getImagePiezo( plane );
 			final Image< FloatType > planeImg = AvgProjection3.project( image );
 			
 			// store the images
@@ -98,7 +77,7 @@ public class AlignXY
 			
 			if ( planeStack == null )
 				planeStack = new ImageStack( planeImg.getDimension( 0 ), planeImg.getDimension( 1 ) );
-			planeStack.addSlice( plane.name + "_" + plane.tileNumber, ImageJFunctions.copyToImagePlus( planeImg ).getProcessor() );
+			planeStack.addSlice( plane.getFullName(), ImageJFunctions.copyToImagePlus( planeImg ).getProcessor() );
 		}
 		
 		ImagePlus stack = new ImagePlus( "stack of avg proj", planeStack );
@@ -106,8 +85,8 @@ public class AlignXY
 		// make it a timelapse and not a stack
 		stack = OverlayFusion.switchZTinXYCZT( stack );
 
-		//stack.show();
-		//SimpleMultiThreading.threadHaltUnClean();
+		stack.show();
+		SimpleMultiThreading.threadHaltUnClean();
 		
 		// compute the per-plane registration
 		// of NPC and mRNA
@@ -119,10 +98,10 @@ public class AlignXY
 		for ( int i = 0; i < planes.size(); ++i )
 		{
 			planes.get( i ).setXYModel( Descriptor_based_series_registration.lastModels.get( i ) );
-			out.println( "Plane " + planes.get( i ).tileNumber + " of " + planes.get( i ).name + " <-\t" + Descriptor_based_series_registration.lastModels.get( i ) );
+			out.println( "Plane " + planes.get( i ).getFullName() + " <-\t" + Descriptor_based_series_registration.lastModels.get( i ) );
 			
 			if ( Align.outAllXY != null )
-				Align.outAllXY.println( planes.get( i ).baseDir + "\t" + planes.get( i ).name + "\t" + planes.get( i ).tileNumber + "\t" + Descriptor_based_series_registration.lastModels.get( i ) );
+				Align.outAllXY.println( planes.get( i ).baseDir + "\t" + planes.get( i ).getFullName() + "\t" + Descriptor_based_series_registration.lastModels.get( i ) );
 
 		}
 		if ( Align.outAllXY != null )
@@ -131,13 +110,25 @@ public class AlignXY
 		out.close();
 	}
 
-	
-	public Image<FloatType> getImage( final String baseDir, final String dir, final int index, final boolean mirror ) throws FormatException, IOException
+	/**
+	 * It looks if this file has been already converted from the slices in the directory into its own file, if so it just loads it
+	 * 
+	 * @param baseDir - base directory of the MFM experiment
+	 * @param dir - the directory that contains all the individual slices of the piezo DNA stack
+	 * @param fileNameTag - if multiple channels are in the directory a String that selects for the current channel (e.g. green)
+	 * @param index - which of the tiles to load (0...8)
+	 * @param mirror - mirror the image or not
+	 * @return
+	 * @throws FormatException
+	 * @throws IOException
+	 */
+	//public Image<FloatType> getImagePiezo( final String baseDir, final String dir, final String fileNameTag, final int index, final Mirroring mirror ) throws FormatException, IOException
+	public Image<FloatType> getImagePiezo( final MicroscopyPlane plane ) throws FormatException, IOException
 	{	
 		Image<FloatType> image;
 		
-		final File file = new File( baseDir, AlignProperties.tmpName + dir + "_" + index + AlignProperties.piezoStack );
-		
+		final File file = new File( plane.getBaseDirectory(), AlignProperties.tmpName + plane.getFullName() + AlignProperties.piezoStack );
+				
 		// load or create the 3d-stack
 		if ( file.exists() )
 		{
@@ -145,10 +136,10 @@ public class AlignXY
 		}
 		else
 		{
-			image = OpenPiezoStack.openPiezo( new File( baseDir, dir ).getAbsolutePath() );
-			if ( mirror )
+			image = OpenPiezoStack.openPiezo( new File( plane.getBaseDirectory(), plane.getLocalDirectory() ), plane.getTagName() );
+			if ( plane.getMirror() == Mirroring.HORIZONTALLY )
 				Mirror.horizontal( image );
-			image = ExtractPlane.extract( image, index );
+			image = ExtractPlane.extract( image, plane.getTileNumber() );
 			
 			// save the extracted stack
 			FileSaver fs = new FileSaver( ImageJFunctions.copyToImagePlus( image ) );
@@ -201,10 +192,24 @@ public class AlignXY
 	{
 		new ImageJ();
 		
-		final String[] names = new String[]{ "DNA stack mRNA", "DNA stack NPC" };
-		final boolean[] mirror = new boolean[]{ true, false };
+		final String root = "/home/stephanpreibisch/Desktop/stephan/";
+		final String experimentDir = "1 (20110525, dish 2, cell 22)";
 		
-		new AlignXY( "/Users/preibischs/Documents/Microscopy/david/sample 1/", names, mirror );
+		final String localDir = "DNA stack";
+		
+		final String[] tags = new String[] { "green", "red" };
+		final Mirroring[] mirror = new Mirroring[]{ Mirroring.HORIZONTALLY, Mirroring.DONOT };
+		
+		//
+		// set up the planes
+		// 	
+		final ArrayList< MicroscopyPlane > planes = new ArrayList< MicroscopyPlane >();
+		
+		for ( int c = 0; c < tags.length; ++c )
+			for ( int t = 0; t < AlignProperties.numTiles; ++t )
+				planes.add( new MicroscopyPlane( root + experimentDir, localDir, tags[ c ], mirror[ c ], t ) );
+
+		new AlignXY( planes );
 	}
 	
 }

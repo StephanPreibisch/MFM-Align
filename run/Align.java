@@ -38,7 +38,7 @@ import process.CrossCorrelation;
 import process.Mirror;
 import process.OverlayFusion;
 import process.QuantileNormalization;
-
+import run.MicroscopyPlane.Mirroring;
 import mpicbg.imglib.container.array.Array;
 import mpicbg.imglib.container.array.ArrayContainerFactory;
 import mpicbg.imglib.container.basictypecontainer.array.FloatArray;
@@ -154,7 +154,7 @@ public class Align
 		return new CompositeImage( result, CompositeImage.COMPOSITE );
 	}
 	
-	public static CompositeImage createFinalImages( final ArrayList< MicroscopyPlane > planes, final String baseDir, final String[] target, final boolean[] mirror, final boolean adjust, final boolean quantile ) throws Exception, IOException
+	public static CompositeImage createFinalImages( final ArrayList< MicroscopyPlane > planes, final String baseDir, final String[] target, final Mirroring[] mirror, final boolean adjust, final boolean quantile ) throws Exception, IOException
 	{
 		final File t1 = new File( baseDir, target[ 0 ] );
 		final File t2 = new File( baseDir, target[ 1 ] );
@@ -168,11 +168,11 @@ public class Align
 		final Image< FloatType > img2 = new ImageOpener().openImage( t2.getAbsolutePath(), new ImageFactory<FloatType>( new FloatType(), new ArrayContainerFactory() ) );
 		final Image< FloatType > img3 = new ImageOpener().openImage( t3.getAbsolutePath(), new ImageFactory<FloatType>( new FloatType(), new ArrayContainerFactory() ) );
 		
-		if ( mirror[ 0 ] )
+		if ( mirror[ 0 ] == Mirroring.HORIZONTALLY )
 			Mirror.horizontal( img1 );
-		if ( mirror[ 1 ] )
+		if ( mirror[ 1 ] == Mirroring.HORIZONTALLY )
 			Mirror.horizontal( img2 );
-		if ( mirror[ 2 ] )
+		if ( mirror[ 2 ] == Mirroring.HORIZONTALLY )
 			Mirror.horizontal( img3 );
 		
 		// extract all planes and overwrite them in the planes ArrayList
