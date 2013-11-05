@@ -18,20 +18,15 @@
  */
 package process;
 
-import ij.ImagePlus;
-
 import java.util.concurrent.atomic.AtomicInteger;
 
 import mpicbg.imglib.algorithm.fft.Bandpass;
 import mpicbg.imglib.algorithm.fft.FourierTransform;
-import mpicbg.imglib.algorithm.fft.FourierTransform.PreProcessing;
 import mpicbg.imglib.cursor.LocalizableByDimCursor;
 import mpicbg.imglib.cursor.LocalizableCursor;
 import mpicbg.imglib.image.Image;
 import mpicbg.imglib.image.display.Display;
-import mpicbg.imglib.image.display.imagej.ImageJFunctions;
 import mpicbg.imglib.multithreading.SimpleMultiThreading;
-import mpicbg.imglib.outofbounds.OutOfBoundsStrategyValueFactory;
 import mpicbg.imglib.type.numeric.complex.ComplexFloatType;
 import mpicbg.imglib.type.numeric.real.FloatType;
 
