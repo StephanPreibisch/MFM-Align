@@ -29,6 +29,7 @@ import io.OpenPiezoStack;
 import io.TextFileAccess;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -155,7 +156,8 @@ public class Align
 		return new CompositeImage( result, CompositeImage.COMPOSITE );
 	}
 	
-	public static CompositeImage createFinalImages( final ArrayList< MicroscopyPlane > planes, final String baseDir, final String[] target, final Mirroring[] mirror, final boolean adjust, final boolean quantile ) throws Exception, IOException
+	public static CompositeImage createFinalImages( final ArrayList< MicroscopyPlane > planes, final String baseDir, final String[] target, final Mirroring[] mirror,
+						final boolean adjust, final boolean quantile ) throws Exception, IOException
 	{
 		final File t1 = new File( baseDir, target[ 0 ] );
 		final File t2 = new File( baseDir, target[ 1 ] );
@@ -182,10 +184,13 @@ public class Align
 			final MicroscopyPlane plane1 = planes.get( i );
 			final MicroscopyPlane plane2 = planes.get( i + 9 );
 			
-			final MicroscopyPlane plane3 = new MicroscopyPlane( plane1.baseDir, target[ 2 ], mirror[ 2 ], i );
+			final MicroscopyPlane plane3 = new MicroscopyPlane( plane1.getBaseDirectory(), target[ 2 ], plane1.tag, mirror[ 2 ], i );					
+			//new MicroscopyPlane( plane1.baseDir, target[ 2 ], mirror[ 2 ], i );
 			
-			plane1.name = target[ 0 ];
-			plane2.name = target[ 1 ];
+			plane1.tag = target[ 0 ];
+			plane2.tag = target[ 1 ];
+			plane1.localDir = "";
+			plane2.localDir = "";
 			
 			plane1.setImage( ExtractPlane.extract( img1, i ) );
 			plane2.setImage( ExtractPlane.extract( img2, i ) );
@@ -304,7 +309,7 @@ public class Align
 					}
 					
 					final float[] pixels = ((FloatArray)((Array)planeTmp.getContainer()).update( null )).getCurrentStorageArray();
-					stack.addSlice( plane.name + "_tile=" + plane.tileNumber + "_time=" + t, new FloatProcessor( size[ 0 ], size[ 1 ], pixels ) );
+					stack.addSlice( plane.getFullName() + "_time=" + t, new FloatProcessor( size[ 0 ], size[ 1 ], pixels ) );
 				}
 			}
 		}
@@ -342,8 +347,8 @@ public class Align
 	public static void alignAll( final String baseDir, final AbstractAffineModel2D< ? > model2d ) throws Exception
 	{		
 		final String localDir = "DNA stack";
-		
-		final String[] tags = new String[] { "green", "red" };
+			
+		final String[] tags = new String[] { "2464" /*green*/, "4283" /*red*/ };
 		final Mirroring[] mirror = new Mirroring[]{ Mirroring.HORIZONTALLY, Mirroring.DONOT };
 		
 		//
@@ -354,12 +359,6 @@ public class Align
 		for ( int c = 0; c < tags.length; ++c )
 			for ( int t = 0; t < AlignProperties.numTiles; ++t )
 				planes.add( new MicroscopyPlane( baseDir, localDir, tags[ c ], mirror[ c ], t ) );
-
-		
-		//final String[] names = new String[]{ "DNA stack mRNA", "DNA stack NPC" };
-		//final boolean[] mirror = new boolean[]{ true, false };
-		final String[] target = new String[]{ "mRNA.tif", "NPC.tif", "mRNAreg.tif" };
-		final boolean[] mirrorTarget = new boolean[]{ true, false, true };
 		
 		AlignZ alignZ = new AlignZ( planes );
 		AlignXY alignXY = new AlignXY( alignZ.getPlanes(), model2d );
@@ -368,28 +367,81 @@ public class Align
 		showAlignedProjections( alignZ.getPlanes() ).show();
 		
 		// apply to the images
-		showAlignedImages( alignZ.getPlanes() ).show();
+		// showAlignedImages( alignZ.getPlanes() ).show();
+
+		final String greenChannelLarge = findImageFile( new File( baseDir ), "2464", 200*1024*1024, 500*1024*1024 );
+		final String greenChannelDNA = findImageFile( new File( baseDir ), "2464", 5*1024*1024, 15*1024*1024 );
+		final String redChannelLarge = findImageFile( new File( baseDir ), "4283", 200*1024*1024, 500*1024*1024 );
+
+		final String[] target = new String[]{ greenChannelLarge, redChannelLarge, greenChannelDNA };
+		final Mirroring[] mirrorTarget = new Mirroring[]{ Mirroring.HORIZONTALLY, Mirroring.DONOT, Mirroring.HORIZONTALLY };
 		
-		/*
-		CompositeImage ci = createFinalImages( alignZ.getPlanes(), baseDir, target, mirrorTarget, false );
+		CompositeImage ci = createFinalImages( alignZ.getPlanes(), baseDir, target, mirrorTarget, false, false );
 		FileSaver fs = new FileSaver( ci );
 		fs.saveAsTiffStack( new File( baseDir, "raw_aligned.tif" ).getAbsolutePath() );
 		ci.close();
-		*/
 		
-		/*
-		CompositeImage ci = createFinalImages( alignZ.getPlanes(), baseDir, target, mirrorTarget, true, false );
-		FileSaver fs = new FileSaver( ci );
+		ci = createFinalImages( alignZ.getPlanes(), baseDir, target, mirrorTarget, true, false );
+		fs = new FileSaver( ci );
 		fs.saveAsTiffStack( new File( baseDir, "avgcorrected_aligned.tif" ).getAbsolutePath() );
 		ci.close();
-		*/
 
-		/*
-		CompositeImage ci = createFinalImages( alignZ.getPlanes(), baseDir, target, mirrorTarget, true, true );
-		FileSaver fs = new FileSaver( ci );
+		ci = createFinalImages( alignZ.getPlanes(), baseDir, target, mirrorTarget, true, true );
+		fs = new FileSaver( ci );
 		fs.saveAsTiffStack( new File( baseDir, "avgcorrected_quantile_aligned.tif" ).getAbsolutePath() );
 		ci.close();
-		*/	
+	}
+	
+	/**
+	 * Find file that corresponds to these criterian
+	 * 
+	 * @param baseDir - the directory
+	 * @param tag - a part of the filename
+	 * @param minSize - min size in byte
+	 * @param maxSize - max size in byte
+	 * @return
+	 */
+	public static String findImageFile( final File baseDir, final String tag, final int minSize, final int maxSize )
+	{
+		final String[] list = baseDir.list(
+				new FilenameFilter() 
+				{	
+					@Override
+					public boolean accept( final File dir, final String name ) 
+					{
+						final File newFile = new File( dir, name );
+						
+						// ignore directories and hidden files
+						if ( newFile.isHidden() || newFile.isDirectory() )
+							return false;
+						else if ( name.contains( tag ) && newFile.length() > minSize && newFile.length() < maxSize )
+							return true;
+						else
+							return false;
+					}
+				}
+				);
+	
+		if ( list.length == 0 )
+		{
+			System.out.println( "No file found in '" + baseDir + "' that contains '" + tag + "' and is larger than '" + minSize + "' and smaller than '" + maxSize + "'" );
+			return null;
+		}
+		else if ( list.length > 1 )
+		{
+			System.out.println( "MORE that one file found in '" + baseDir + "' that contains '" + tag + "' and is larger than '" + minSize + "' and smaller than '" + maxSize + "'" );
+
+			for ( final String s : list )
+			{
+				final File f = new File( baseDir, s );
+				System.out.println( f + " >> " + f.length() );
+			}
+			return null;
+		}
+		else
+		{
+			return list[ 0 ];
+		}
 	}
 	
 	public static void main( String[] args ) throws Exception
@@ -430,6 +482,8 @@ public class Align
 		
 		if ( outAllXY != null )
 			outAllXY.close();
+		
+		System.out.println( "All done. exiting." );
 		
 		System.exit( 0 );
 	}

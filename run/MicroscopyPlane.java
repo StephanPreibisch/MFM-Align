@@ -45,7 +45,7 @@ public class MicroscopyPlane extends Tile< TranslationModel1D >
 	public static enum Mirroring { DONOT, HORIZONTALLY };
 	
 	final String baseDir;
-	String dirname, tag;
+	String localDir, tag;
 	final Mirroring mirror;
 	final int tileNumber;
 	
@@ -74,15 +74,15 @@ public class MicroscopyPlane extends Tile< TranslationModel1D >
 		super( new TranslationModel1D() );
 		
 		this.baseDir = baseDir;
-		this.dirname = dirname;
+		this.localDir = dirname;
 		this.tag = tag;
 		this.mirror = mirror;
 		this.tileNumber = tileNumber;
 	}
 	
 	public String getBaseDirectory() { return baseDir; }
-	public String getFullName() { return tag + "_" + dirname + "_" + tileNumber; }
-	public String getLocalDirectory() { return dirname; }
+	public String getFullName() { return tag + "_" + localDir + "_" + tileNumber; }
+	public String getLocalDirectory() { return localDir; }
 	public String getTagName() { return tag; }
 	public Mirroring getMirror() { return mirror; }
 	
