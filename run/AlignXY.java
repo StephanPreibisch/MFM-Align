@@ -37,6 +37,8 @@ import mpicbg.imglib.image.Image;
 import mpicbg.imglib.image.display.imagej.ImageJFunctions;
 import mpicbg.imglib.io.LOCI;
 import mpicbg.imglib.type.numeric.real.FloatType;
+import mpicbg.models.AbstractAffineModel2D;
+import mpicbg.models.AffineModel2D;
 import mpicbg.models.IllDefinedDataPointsException;
 import mpicbg.models.NotEnoughDataPointsException;
 import mpicbg.models.RigidModel2D;
@@ -56,18 +58,19 @@ public class AlignXY
 	 * Makes the max projections for all {@link MicroscopyPlane}s, alignes them and stores the transformation model in the
 	 * {@link MicroscopyPlane} object.
 	 * 
-	 * @param planes
+	 * @param planes - the {@link MicroscopyPlane}s
+	 * @param model - which model to use, e.g. RigidModel2d, AffineModel2d
 	 * @throws FormatException
 	 * @throws IOException
 	 */
-	public AlignXY( final ArrayList< MicroscopyPlane > planes ) throws FormatException, IOException
+	public AlignXY( final ArrayList< MicroscopyPlane > planes, final AbstractAffineModel2D< ? > model ) throws FormatException, IOException
 	{
 		this.planes = planes;
 		
-		align();
+		align( model );
 	}
 	
-	public void align() throws FormatException, IOException
+	public void align( final AbstractAffineModel2D< ? > model ) throws FormatException, IOException
 	{
 		//
 		// extract a stack of z-avg-projections
@@ -98,7 +101,7 @@ public class AlignXY
 		
 		// compute the per-plane registration
 		// of NPC and mRNA
-		final DescriptorParameters params = getParametersForProjection();
+		final DescriptorParameters params = getParametersForProjection( model );
 		Matching.descriptorBasedStackRegistration( stack, params );
 
 		// set the models
@@ -118,7 +121,7 @@ public class AlignXY
 		out.close();
 	}
 
-	protected DescriptorParameters getParametersForProjection()
+	protected DescriptorParameters getParametersForProjection( final AbstractAffineModel2D< ? > model )
 	{
 		final DescriptorParameters params = new DescriptorParameters();
 		
@@ -128,7 +131,12 @@ public class AlignXY
 		params.threshold = 0.020566484f;
 		params.lookForMaxima = true;
 		params.lookForMinima = true;
-		params.model = new RigidModel2D();
+		
+		if ( model == null )
+			params.model = new RigidModel2D();
+		else
+			params.model = model;
+			
 		params.similarOrientation = true;
 		params.numNeighbors = 3;
 		params.redundancy = 1;
@@ -177,7 +185,7 @@ public class AlignXY
 			for ( int t = 0; t < AlignProperties.numTiles; ++t )
 				planes.add( new MicroscopyPlane( root + experimentDir, localDir, tags[ c ], mirror[ c ], t ) );
 
-		new AlignXY( planes );
+		new AlignXY( planes, new RigidModel2D() );
 	}
 	
 }

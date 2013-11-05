@@ -57,6 +57,7 @@ import mpicbg.models.AbstractAffineModel2D;
 import mpicbg.models.IllDefinedDataPointsException;
 import mpicbg.models.InvertibleBoundable;
 import mpicbg.models.NotEnoughDataPointsException;
+import mpicbg.models.RigidModel2D;
 
 public class Align 
 {
@@ -114,7 +115,7 @@ public class Align
 					CrossCorrelation.extractPlane( img.createInterpolator( interpolatorF ), planeTmp, t - plane.getModel().tx );
 					
 					final float[] pixels = ((FloatArray)((Array)planeTmp.getContainer()).update( null )).getCurrentStorageArray();
-					stack.addSlice( plane.name + "_tile=" + plane.tileNumber + "_slice=" + t, new FloatProcessor( size[ 0 ], size[ 1 ], pixels ) );
+					stack.addSlice( plane.getFullName() + "_tile=" + plane.tileNumber + "_slice=" + t, new FloatProcessor( size[ 0 ], size[ 1 ], pixels ) );
 				}
 			}
 		}
@@ -144,7 +145,7 @@ public class Align
 				
 				final Image< FloatType > proj = plane.getAvgProj();
 				OverlayFusion.fuseChannel( proj, proj.clone(), new float[ proj.getNumDimensions() ], plane.getXYModel(), new LinearInterpolatorFactory<FloatType>( new OutOfBoundsStrategyMirrorFactory<FloatType>() ) );			
-				stack.addSlice( plane.name + "_tile=" + plane.tileNumber, ImageJFunctions.copyToImagePlus( proj ).getProcessor() );
+				stack.addSlice( plane.getFullName(), ImageJFunctions.copyToImagePlus( proj ).getProcessor() );
 			}
 		}
 
@@ -338,21 +339,36 @@ public class Align
 		}
 	}
 	
-	public static void alignAll( final String baseDir ) throws Exception
-	{
-		final String[] names = new String[]{ "DNA stack mRNA", "DNA stack NPC" };
-		final boolean[] mirror = new boolean[]{ true, false };
+	public static void alignAll( final String baseDir, final AbstractAffineModel2D< ? > model2d ) throws Exception
+	{		
+		final String localDir = "DNA stack";
+		
+		final String[] tags = new String[] { "green", "red" };
+		final Mirroring[] mirror = new Mirroring[]{ Mirroring.HORIZONTALLY, Mirroring.DONOT };
+		
+		//
+		// set up the planes
+		// 	
+		final ArrayList< MicroscopyPlane > planes = new ArrayList< MicroscopyPlane >();
+		
+		for ( int c = 0; c < tags.length; ++c )
+			for ( int t = 0; t < AlignProperties.numTiles; ++t )
+				planes.add( new MicroscopyPlane( baseDir, localDir, tags[ c ], mirror[ c ], t ) );
+
+		
+		//final String[] names = new String[]{ "DNA stack mRNA", "DNA stack NPC" };
+		//final boolean[] mirror = new boolean[]{ true, false };
 		final String[] target = new String[]{ "mRNA.tif", "NPC.tif", "mRNAreg.tif" };
 		final boolean[] mirrorTarget = new boolean[]{ true, false, true };
 		
-		AlignZ alignZ = new AlignZ( baseDir, names, mirror );
-		AlignXY alignXY = new AlignXY( alignZ.getPlanes() );
+		AlignZ alignZ = new AlignZ( planes );
+		AlignXY alignXY = new AlignXY( alignZ.getPlanes(), model2d );
 		
 		// apply models to the avg projections
 		showAlignedProjections( alignZ.getPlanes() ).show();
 		
 		// apply to the images
-		// showAlignedImages( alignZ.getPlanes() ).show();
+		showAlignedImages( alignZ.getPlanes() ).show();
 		
 		/*
 		CompositeImage ci = createFinalImages( alignZ.getPlanes(), baseDir, target, mirrorTarget, false );
@@ -360,16 +376,15 @@ public class Align
 		fs.saveAsTiffStack( new File( baseDir, "raw_aligned.tif" ).getAbsolutePath() );
 		ci.close();
 		*/
+		
 		/*
-<<<<<<< HEAD
-=======
 		CompositeImage ci = createFinalImages( alignZ.getPlanes(), baseDir, target, mirrorTarget, true, false );
 		FileSaver fs = new FileSaver( ci );
 		fs.saveAsTiffStack( new File( baseDir, "avgcorrected_aligned.tif" ).getAbsolutePath() );
 		ci.close();
 		*/
+
 		/*
->>>>>>> 773d95b58a7f997788fe6db33f894612fa0da3c3
 		CompositeImage ci = createFinalImages( alignZ.getPlanes(), baseDir, target, mirrorTarget, true, true );
 		FileSaver fs = new FileSaver( ci );
 		fs.saveAsTiffStack( new File( baseDir, "avgcorrected_quantile_aligned.tif" ).getAbsolutePath() );
@@ -379,16 +394,20 @@ public class Align
 	
 	public static void main( String[] args ) throws Exception
 	{
+		final AbstractAffineModel2D< ? > model2d = new RigidModel2D();
+		
+		final String root = "/home/stephanpreibisch/Desktop/stephan/";
+		final String experimentDir = "1 (20110525, dish 2, cell 22)";
 
 		new ImageJ();
 		
 		final ArrayList< String > allDirs = new ArrayList<String>();
-		//findAllDataDirs( "/Volumes/TOSHIBA EXT/3D analysis files", allDirs );
+		findAllDataDirs( root, allDirs );
 	
 		allDirs.clear();
 		//allDirs.add( "/Users/preibischs/Documents/Microscopy/david/sample 1/" );
 		//allDirs.add( "/Volumes/TOSHIBA EXT/3D analysis files/2011-05-25/Dish 03/cell 06" );
-		allDirs.add( "/Users/preibischs/Documents/Microscopy/david/sample 1/" );
+		allDirs.add( root + experimentDir );
 		
 		for ( final String baseDir : allDirs )
 		{
@@ -396,7 +415,7 @@ public class Align
 			
 			try
 			{
-				alignAll( baseDir );
+				alignAll( baseDir, model2d.copy() );
 			}
 			catch (Exception e)
 			{
@@ -406,8 +425,11 @@ public class Align
 			System.out.println( "done." );
 		}
 		
-		outAllZ.close();
-		outAllXY.close();
+		if ( outAllZ != null )
+			outAllZ.close();
+		
+		if ( outAllXY != null )
+			outAllXY.close();
 		
 		System.exit( 0 );
 	}
