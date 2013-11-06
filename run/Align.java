@@ -33,6 +33,8 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 
 import process.AvgProjection3;
 import process.CrossCorrelation;
@@ -50,6 +52,7 @@ import mpicbg.imglib.interpolation.InterpolatorFactory;
 import mpicbg.imglib.interpolation.linear.LinearInterpolatorFactory;
 import mpicbg.imglib.io.ImageOpener;
 import mpicbg.imglib.io.LOCI;
+import mpicbg.imglib.multithreading.SimpleMultiThreading;
 import mpicbg.imglib.outofbounds.OutOfBoundsStrategyFactory;
 import mpicbg.imglib.outofbounds.OutOfBoundsStrategyMirrorFactory;
 import mpicbg.imglib.outofbounds.OutOfBoundsStrategyValueFactory;
@@ -328,7 +331,7 @@ public class Align
 		
 		for ( final String entry : entries )
 		{
-			if ( entry.contains( "mRNAreg.tif") )
+			if ( entry.contains( "4283") )
 			{
 				data.add( f.getAbsolutePath() );
 				return;
@@ -362,9 +365,13 @@ public class Align
 		
 		AlignZ alignZ = new AlignZ( planes );
 		AlignXY alignXY = new AlignXY( alignZ.getPlanes(), model2d );
+
+		// remove registration
+		//for ( final MicroscopyPlane plane : planes )
+		//	plane.setXYModel( model2d.copy() );
 		
 		// apply models to the avg projections
-		showAlignedProjections( alignZ.getPlanes() ).show();
+		showAlignedProjections( planes ).show();
 		
 		// apply to the images
 		// showAlignedImages( alignZ.getPlanes() ).show();
@@ -376,17 +383,17 @@ public class Align
 		final String[] target = new String[]{ greenChannelLarge, redChannelLarge, greenChannelDNA };
 		final Mirroring[] mirrorTarget = new Mirroring[]{ Mirroring.HORIZONTALLY, Mirroring.DONOT, Mirroring.HORIZONTALLY };
 		
-		CompositeImage ci = createFinalImages( alignZ.getPlanes(), baseDir, target, mirrorTarget, false, false );
+		CompositeImage ci = createFinalImages( planes, baseDir, target, mirrorTarget, false, false );
 		FileSaver fs = new FileSaver( ci );
 		fs.saveAsTiffStack( new File( baseDir, "raw_aligned.tif" ).getAbsolutePath() );
 		ci.close();
 		
-		ci = createFinalImages( alignZ.getPlanes(), baseDir, target, mirrorTarget, true, false );
+		ci = createFinalImages( planes, baseDir, target, mirrorTarget, true, false );
 		fs = new FileSaver( ci );
 		fs.saveAsTiffStack( new File( baseDir, "avgcorrected_aligned.tif" ).getAbsolutePath() );
 		ci.close();
 
-		ci = createFinalImages( alignZ.getPlanes(), baseDir, target, mirrorTarget, true, true );
+		ci = createFinalImages( planes, baseDir, target, mirrorTarget, true, true );
 		fs = new FileSaver( ci );
 		fs.saveAsTiffStack( new File( baseDir, "avgcorrected_quantile_aligned.tif" ).getAbsolutePath() );
 		ci.close();
@@ -448,18 +455,25 @@ public class Align
 	{
 		final AbstractAffineModel2D< ? > model2d = new RigidModel2D();
 		
-		final String root = "/home/stephanpreibisch/Desktop/stephan/";
+		final String root = "/media/f3df52e9-9b20-4b66-a4cc-1fc741ff481e/stephan/";
 		final String experimentDir = "1 (20110525, dish 2, cell 22)";
 
 		new ImageJ();
 		
 		final ArrayList< String > allDirs = new ArrayList<String>();
 		findAllDataDirs( root, allDirs );
+		Collections.sort( allDirs );
+		
+		for ( final String s : allDirs )
+			System.out.println( s );
+		
+		
+		System.out.println( "\nStarting\n" );
 	
-		allDirs.clear();
+		//allDirs.clear();
 		//allDirs.add( "/Users/preibischs/Documents/Microscopy/david/sample 1/" );
 		//allDirs.add( "/Volumes/TOSHIBA EXT/3D analysis files/2011-05-25/Dish 03/cell 06" );
-		allDirs.add( root + experimentDir );
+		//allDirs.add( root + experimentDir );
 		
 		for ( final String baseDir : allDirs )
 		{
@@ -472,6 +486,7 @@ public class Align
 			catch (Exception e)
 			{
 				System.err.println( "Failed on: " + baseDir );
+				e.printStackTrace();
 			}
 			
 			System.out.println( "done." );
