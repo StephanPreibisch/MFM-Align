@@ -330,28 +330,31 @@ public class Start
 		final String baseDir = "/home/stephanpreibisch/Desktop/stephan/";
 		final String experimentDir = "1 (20110525, dish 2, cell 22)";
 		final String refChannelDir = "DNA stack";
-		final String refChannelTag ="green"; 
+		final String refChannelTag = "2464"; //"green"; 
 		final String templateChannelDir = "DNA stack";
-		final String templateChannelTag ="red";
+		final String templateChannelTag = "4283"; //"red";
+		
+		final String refChannelDarkCount = baseDir + "Dark Counts/MED_avgstack_DNA_2464 green.tif"; // can be null
+		final String templateChannelDarkCount = baseDir + "Dark Counts/MED_avgstack_DNA_4283 red.tif"; // can be null
 		
 		//
 		// register the individual planes of both channels to one reference
 		//
 
-		final MicroscopyPlane referencePlane = new MicroscopyPlane( new File( baseDir, experimentDir ).getAbsolutePath(), refChannelDir, refChannelTag, Mirroring.DONOT, referencePlaneIndex );
+		final MicroscopyPlane referencePlane = new MicroscopyPlane( new File( baseDir, experimentDir ).getAbsolutePath(), refChannelDir, refChannelTag, refChannelDarkCount, Mirroring.DONOT, referencePlaneIndex );
 
 		for ( int plane = 0; plane < 9; ++plane )
 		{
 			if ( plane != referencePlaneIndex )
 			{
-				final MicroscopyPlane templatePlane = new MicroscopyPlane( new File( baseDir, experimentDir ).getAbsolutePath(), refChannelDir, refChannelTag, Mirroring.DONOT, plane );	
+				final MicroscopyPlane templatePlane = new MicroscopyPlane( new File( baseDir, experimentDir ).getAbsolutePath(), refChannelDir, refChannelTag, refChannelDarkCount, Mirroring.DONOT, plane );	
 				new Start( referencePlane, templatePlane );
 			}
 		}
 		
 		for ( int plane = 0; plane < 9; ++plane )
 		{
-			final MicroscopyPlane templatePlane = new MicroscopyPlane( new File( baseDir, experimentDir ).getAbsolutePath(), templateChannelDir, templateChannelTag, Mirroring.HORIZONTALLY, plane );	
+			final MicroscopyPlane templatePlane = new MicroscopyPlane( new File( baseDir, experimentDir ).getAbsolutePath(), templateChannelDir, templateChannelTag, templateChannelDarkCount, Mirroring.HORIZONTALLY, plane );	
 			new Start( referencePlane, templatePlane );
 		}
 	}

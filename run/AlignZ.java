@@ -178,6 +178,11 @@ public class AlignZ
 				{
 					ref = OpenPiezoStack.openPiezo( new File( refPlane.getBaseDirectory(), refPlane.getLocalDirectory() ), refPlane.getTagName() );
 
+					if ( MicroscopyPlane.subtractDarkCount( ref, refPlane.getDarkCountImageName() ) )
+						System.out.println( "SUBTRACTED darkcount image '" + refPlane.getDarkCountImageName() + "'" );
+					else
+						System.out.println( "NOT FOUND Darkcount image '" + refPlane.getDarkCountImageName() + "'" );
+					
 					if ( refPlane.getMirror() == Mirroring.HORIZONTALLY )
 						Mirror.horizontal( ref );
 
@@ -236,7 +241,12 @@ public class AlignZ
 				if ( ( template = allPiezoStacks.get( templatePlane.getTagName() ) ) == null )
 				{
 					template = OpenPiezoStack.openPiezo( new File( templatePlane.getBaseDirectory(), templatePlane.getLocalDirectory() ), templatePlane.getTagName() );
-						
+					
+					if ( MicroscopyPlane.subtractDarkCount( template, templatePlane.getDarkCountImageName() ) )
+						System.out.println( "SUBTRACTED darkcount image '" + templatePlane.getDarkCountImageName() + "'" );
+					else
+						System.out.println( "NOT FOUND Darkcount image '" + templatePlane.getDarkCountImageName() + "'" );
+					
 					if ( templatePlane.getMirror() == Mirroring.HORIZONTALLY )
 						Mirror.horizontal( template );
 					
@@ -343,9 +353,12 @@ public class AlignZ
 		
 		final String localDir = "DNA stack";
 		
-		final String[] tags = new String[] { "green", "red" };
+		final String[] tags = new String[] { "2464"/*"green"*/, "4283"/*"red"*/ };
 		final Mirroring[] mirror = new Mirroring[]{ Mirroring.HORIZONTALLY, Mirroring.DONOT };
 		
+		final String darkCounts[] = new String[]{ root + "Dark Counts/MED_avgstack_DNA_2464 green.tif",
+												   root + "Dark Counts/MED_avgstack_DNA_4283 red.tif" }; // can be null
+
 		//
 		// set up the planes
 		// 	
@@ -353,7 +366,7 @@ public class AlignZ
 		
 		for ( int c = 0; c < tags.length; ++c )
 			for ( int t = 0; t < AlignProperties.numTiles; ++t )
-				planes.add( new MicroscopyPlane( root + experimentDir, localDir, tags[ c ], mirror[ c ], t ) );
+				planes.add( new MicroscopyPlane( root + experimentDir, localDir, tags[ c ], darkCounts[ c ], mirror[ c ], t ) );
 		
 		new AlignZ( planes );
 	}

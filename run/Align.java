@@ -58,6 +58,9 @@ import mpicbg.imglib.outofbounds.OutOfBoundsStrategyMirrorFactory;
 import mpicbg.imglib.outofbounds.OutOfBoundsStrategyValueFactory;
 import mpicbg.imglib.type.numeric.real.FloatType;
 import mpicbg.models.AbstractAffineModel2D;
+import mpicbg.models.AbstractModel;
+import mpicbg.models.AffineModel2D;
+import mpicbg.models.HomographyModel2D;
 import mpicbg.models.IllDefinedDataPointsException;
 import mpicbg.models.InvertibleBoundable;
 import mpicbg.models.NotEnoughDataPointsException;
@@ -159,7 +162,12 @@ public class Align
 		return new CompositeImage( result, CompositeImage.COMPOSITE );
 	}
 	
-	public static CompositeImage createFinalImages( final ArrayList< MicroscopyPlane > planes, final String baseDir, final String[] target, final Mirroring[] mirror,
+	public static CompositeImage createFinalImages( 
+						final ArrayList< MicroscopyPlane > planes, 
+						final String baseDir, 
+						final String[] target,
+						final String[] darkCountFileNames,
+						final Mirroring[] mirror,
 						final boolean adjust, final boolean quantile ) throws Exception, IOException
 	{
 		final File t1 = new File( baseDir, target[ 0 ] );
@@ -174,6 +182,21 @@ public class Align
 		final Image< FloatType > img2 = new ImageOpener().openImage( t2.getAbsolutePath(), new ImageFactory<FloatType>( new FloatType(), new ArrayContainerFactory() ) );
 		final Image< FloatType > img3 = new ImageOpener().openImage( t3.getAbsolutePath(), new ImageFactory<FloatType>( new FloatType(), new ArrayContainerFactory() ) );
 		
+		if ( MicroscopyPlane.subtractDarkCount( img1, darkCountFileNames[ 0 ] ) )
+			System.out.println( "SUBTRACTED darkcount image '" + darkCountFileNames[ 0 ] + "' from '" + target[ 0 ] + "'" );
+		else
+			System.out.println( "NOT FOUND Darkcount image '" + darkCountFileNames[ 0 ] + "'" );
+		
+		if ( MicroscopyPlane.subtractDarkCount( img2, darkCountFileNames[ 1 ] ) )
+			System.out.println( "SUBTRACTED darkcount image '" + darkCountFileNames[ 1 ] + "' from '" + target[ 1 ] + "'" );
+		else
+			System.out.println( "NOT FOUND Darkcount image '" + darkCountFileNames[ 1 ] + "'" );
+
+		if ( MicroscopyPlane.subtractDarkCount( img3, darkCountFileNames[ 2 ] ) )
+			System.out.println( "SUBTRACTED darkcount image '" + darkCountFileNames[ 2 ] + "' from '" + target[ 2 ] + "'" );
+		else
+			System.out.println( "NOT FOUND Darkcount image '" + darkCountFileNames[ 2 ] + "'" );
+
 		if ( mirror[ 0 ] == Mirroring.HORIZONTALLY )
 			Mirror.horizontal( img1 );
 		if ( mirror[ 1 ] == Mirroring.HORIZONTALLY )
@@ -187,11 +210,12 @@ public class Align
 			final MicroscopyPlane plane1 = planes.get( i );
 			final MicroscopyPlane plane2 = planes.get( i + 9 );
 			
-			final MicroscopyPlane plane3 = new MicroscopyPlane( plane1.getBaseDirectory(), target[ 2 ], plane1.tag, mirror[ 2 ], i );					
-			//new MicroscopyPlane( plane1.baseDir, target[ 2 ], mirror[ 2 ], i );
+			final MicroscopyPlane plane3 = new MicroscopyPlane( plane1.getBaseDirectory(), target[ 2 ], plane1.tag, null, mirror[ 2 ], i );
 			
 			plane1.tag = target[ 0 ];
 			plane2.tag = target[ 1 ];
+			plane1.darkCountImageName = null;
+			plane2.darkCountImageName = null;
 			plane1.localDir = "";
 			plane2.localDir = "";
 			
@@ -347,13 +371,16 @@ public class Align
 		}
 	}
 	
-	public static void alignAll( final String baseDir, final AbstractAffineModel2D< ? > model2d ) throws Exception
+	public static void alignAll( final String baseDir, final AbstractModel< ? > model2d ) throws Exception
 	{		
 		final String localDir = "DNA stack";
 			
 		final String[] tags = new String[] { "2464" /*green*/, "4283" /*red*/ };
 		final Mirroring[] mirror = new Mirroring[]{ Mirroring.HORIZONTALLY, Mirroring.DONOT };
-		
+
+		final String darkCounts[] = new String[]{ baseDir + "/../Dark Counts/MED_avgstack_DNA_2464 green.tif",
+												   baseDir + "/../Dark Counts/MED_avgstack_DNA_4283 red.tif" }; // can be null
+
 		//
 		// set up the planes
 		// 	
@@ -361,7 +388,7 @@ public class Align
 		
 		for ( int c = 0; c < tags.length; ++c )
 			for ( int t = 0; t < AlignProperties.numTiles; ++t )
-				planes.add( new MicroscopyPlane( baseDir, localDir, tags[ c ], mirror[ c ], t ) );
+				planes.add( new MicroscopyPlane( baseDir, localDir, tags[ c ], darkCounts[ c ], mirror[ c ], t ) );
 		
 		AlignZ alignZ = new AlignZ( planes );
 		AlignXY alignXY = new AlignXY( alignZ.getPlanes(), model2d );
@@ -377,23 +404,27 @@ public class Align
 		// showAlignedImages( alignZ.getPlanes() ).show();
 
 		final String greenChannelLarge = findImageFile( new File( baseDir ), "2464", 200*1024*1024, 500*1024*1024 );
-		final String greenChannelDNA = findImageFile( new File( baseDir ), "2464", 5*1024*1024, 15*1024*1024 );
 		final String redChannelLarge = findImageFile( new File( baseDir ), "4283", 200*1024*1024, 500*1024*1024 );
+		final String greenChannelDNA = findImageFile( new File( baseDir ), "2464", 5*1024*1024, 15*1024*1024 );
 
 		final String[] target = new String[]{ greenChannelLarge, redChannelLarge, greenChannelDNA };
 		final Mirroring[] mirrorTarget = new Mirroring[]{ Mirroring.HORIZONTALLY, Mirroring.DONOT, Mirroring.HORIZONTALLY };
-		
-		CompositeImage ci = createFinalImages( planes, baseDir, target, mirrorTarget, false, false );
+
+		final String darkCountsTarget[] = new String[]{ baseDir + "/../Dark Counts/MED_avgstack_mRNA_2464 green.tif",
+														 baseDir + "/../Dark Counts/MED_avgstack_NPC_4283 red.tif",
+														 baseDir + "/../Dark Counts/MED_avgstack_DNA_2464 green.tif" }; // individual can be null or non-existent
+
+		CompositeImage ci = createFinalImages( planes, baseDir, target, darkCountsTarget, mirrorTarget, false, false );
 		FileSaver fs = new FileSaver( ci );
 		fs.saveAsTiffStack( new File( baseDir, "raw_aligned.tif" ).getAbsolutePath() );
 		ci.close();
 		
-		ci = createFinalImages( planes, baseDir, target, mirrorTarget, true, false );
+		ci = createFinalImages( planes, baseDir, target, darkCountsTarget, mirrorTarget, true, false );
 		fs = new FileSaver( ci );
 		fs.saveAsTiffStack( new File( baseDir, "avgcorrected_aligned.tif" ).getAbsolutePath() );
 		ci.close();
 
-		ci = createFinalImages( planes, baseDir, target, mirrorTarget, true, true );
+		ci = createFinalImages( planes, baseDir, target, darkCountsTarget, mirrorTarget, true, true );
 		fs = new FileSaver( ci );
 		fs.saveAsTiffStack( new File( baseDir, "avgcorrected_quantile_aligned.tif" ).getAbsolutePath() );
 		ci.close();
@@ -453,7 +484,7 @@ public class Align
 	
 	public static void main( String[] args ) throws Exception
 	{
-		final AbstractAffineModel2D< ? > model2d = new RigidModel2D();
+		final AbstractModel< ? > model2d = new RigidModel2D();
 		
 		final String root = "/media/f3df52e9-9b20-4b66-a4cc-1fc741ff481e/stephan/";
 		final String experimentDir = "1 (20110525, dish 2, cell 22)";

@@ -29,10 +29,13 @@ import java.util.ArrayList;
 import process.Mirror;
 import loci.formats.FormatException;
 import mpicbg.imglib.container.array.ArrayContainerFactory;
+import mpicbg.imglib.cursor.Cursor;
 import mpicbg.imglib.image.Image;
 import mpicbg.imglib.image.display.imagej.ImageJFunctions;
 import mpicbg.imglib.io.LOCI;
+import mpicbg.imglib.multithreading.SimpleMultiThreading;
 import mpicbg.imglib.type.numeric.real.FloatType;
+import mpicbg.imglib.util.Util;
 import mpicbg.models.InvertibleBoundable;
 import mpicbg.models.Tile;
 import fit.Line;
@@ -46,6 +49,7 @@ public class MicroscopyPlane extends Tile< TranslationModel1D >
 	
 	final String baseDir;
 	String localDir, tag;
+	String darkCountImageName;
 	final Mirroring mirror;
 	final int tileNumber;
 	
@@ -69,7 +73,7 @@ public class MicroscopyPlane extends Tile< TranslationModel1D >
 	 * @param mirror - mirror the image or not
 	 * @param tileNumber - which of the tiles to load (0...8)
 	 */
-	public MicroscopyPlane( final String baseDir, final String dirname, final String tag, final Mirroring mirror, final int tileNumber )
+	public MicroscopyPlane( final String baseDir, final String dirname, final String tag, final String darkCountImageName, final Mirroring mirror, final int tileNumber )
 	{
 		super( new TranslationModel1D() );
 		
@@ -78,8 +82,11 @@ public class MicroscopyPlane extends Tile< TranslationModel1D >
 		this.tag = tag;
 		this.mirror = mirror;
 		this.tileNumber = tileNumber;
+		this.darkCountImageName = darkCountImageName;
 	}
 	
+	public String getDarkCountImageName() { return darkCountImageName; }
+	public void setDarkCountImageName( final String darkCountImageName ) { this.darkCountImageName = darkCountImageName; }
 	public String getBaseDirectory() { return baseDir; }
 	public String getFullName() { return tag + "_" + localDir + "_" + tileNumber; }
 	public String getLocalDirectory() { return localDir; }
@@ -157,7 +164,7 @@ public class MicroscopyPlane extends Tile< TranslationModel1D >
 		return getImagePiezo( this );
 	}
 	
-	public static Image<FloatType> getImagePiezo( final MicroscopyPlane plane ) throws FormatException, IOException
+	public Image<FloatType> getImagePiezo( final MicroscopyPlane plane ) throws FormatException, IOException
 	{	
 		Image<FloatType> image;
 		
@@ -172,6 +179,11 @@ public class MicroscopyPlane extends Tile< TranslationModel1D >
 		{
 			image = OpenPiezoStack.openPiezo( new File( plane.getBaseDirectory(), plane.getLocalDirectory() ), plane.getTagName() );
 			
+			if ( subtractDarkCount( image, plane.getDarkCountImageName() ) )
+				System.out.println( "SUBTRACTED darkcount image '" + plane.getDarkCountImageName() + "'" );
+			else
+				System.out.println( "NOT FOUND Darkcount image '" + plane.getDarkCountImageName() + "'" );
+			
 			if ( plane.getMirror() == Mirroring.HORIZONTALLY )
 				Mirror.horizontal( image );
 			
@@ -184,5 +196,44 @@ public class MicroscopyPlane extends Tile< TranslationModel1D >
 		
 		// load or create the average-projection
 		return image;
+	}
+	
+	public static boolean subtractDarkCount( final Image< FloatType > image, final String darkCountFileName )
+	{
+		if ( darkCountFileName != null && new File( darkCountFileName ).exists() )
+		{
+			final Image< FloatType > darkCount = LOCI.openLOCIFloatType( new File( darkCountFileName ).getAbsolutePath(), new ArrayContainerFactory() );
+			
+			if ( darkCount.getDimension( 0 ) != image.getDimension( 0 ) || darkCount.getDimension( 1 ) != image.getDimension( 1 ) )
+			{
+				System.out.println( "Dimensionality for dark count subtraction does not match:" );
+				System.out.println( "image:" + Util.printCoordinates( image.getDimensions() ) );
+				System.out.println( "darkcounts:" + Util.printCoordinates( darkCount.getDimensions() ) );
+				
+				return false;
+			}
+			
+			final Cursor< FloatType > imageCursor = image.createCursor();
+			final Cursor< FloatType > darkCountCursor = darkCount.createCursor();
+			
+			// subtract plane - by - plane
+			while ( imageCursor.hasNext() )
+			{
+				imageCursor.fwd();
+				
+				if ( !darkCountCursor.hasNext() )
+					darkCountCursor.reset();
+				
+				darkCountCursor.fwd();
+				
+				imageCursor.getType().set( Math.max( 0, imageCursor.getType().get() - darkCountCursor.getType().get() ) );
+			}
+			
+			return true;			
+		}
+		else
+		{
+			return false;
+		}		
 	}
 }

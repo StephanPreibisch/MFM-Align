@@ -38,6 +38,7 @@ import mpicbg.imglib.image.display.imagej.ImageJFunctions;
 import mpicbg.imglib.io.LOCI;
 import mpicbg.imglib.type.numeric.real.FloatType;
 import mpicbg.models.AbstractAffineModel2D;
+import mpicbg.models.AbstractModel;
 import mpicbg.models.AffineModel2D;
 import mpicbg.models.IllDefinedDataPointsException;
 import mpicbg.models.NotEnoughDataPointsException;
@@ -63,14 +64,14 @@ public class AlignXY
 	 * @throws FormatException
 	 * @throws IOException
 	 */
-	public AlignXY( final ArrayList< MicroscopyPlane > planes, final AbstractAffineModel2D< ? > model ) throws FormatException, IOException
+	public AlignXY( final ArrayList< MicroscopyPlane > planes, final AbstractModel< ? > model ) throws FormatException, IOException
 	{
 		this.planes = planes;
 		
 		align( model );
 	}
 	
-	public void align( final AbstractAffineModel2D< ? > model ) throws FormatException, IOException
+	public void align( final AbstractModel< ? > model ) throws FormatException, IOException
 	{
 		//
 		// extract a stack of z-avg-projections
@@ -121,14 +122,14 @@ public class AlignXY
 		out.close();
 	}
 
-	protected DescriptorParameters getParametersForProjection( final AbstractAffineModel2D< ? > model )
+	protected DescriptorParameters getParametersForProjection( final AbstractModel< ? > model )
 	{
 		final DescriptorParameters params = new DescriptorParameters();
 		
 		params.dimensionality = 2;
 		params.sigma1 = 2.99f; // before 2.099f
-		params.sigma2 = 2.4961457f;
-		params.threshold = 0.020566484f;
+		params.sigma2 = 3.55f; // before 2.4961457f;
+		params.threshold = 0.010566484f;
 		params.lookForMaxima = true;
 		params.lookForMinima = true;
 		
@@ -168,14 +169,17 @@ public class AlignXY
 	{
 		new ImageJ();
 		
-		final String root = "/home/stephanpreibisch/Desktop/stephan/";
+		final String root = "/media/f3df52e9-9b20-4b66-a4cc-1fc741ff481e/stephan/";
 		final String experimentDir = "1 (20110525, dish 2, cell 22)";
 		
 		final String localDir = "DNA stack";
 		
-		final String[] tags = new String[] { "green", "red" };
+		final String[] tags = new String[] { "2464"/*"green"*/, "4283"/*"red"*/ };
 		final Mirroring[] mirror = new Mirroring[]{ Mirroring.HORIZONTALLY, Mirroring.DONOT };
 		
+		final String darkCounts[] = new String[]{ root + "Dark Counts/MED_avgstack_DNA_2464 green.tif",
+												   root + "Dark Counts/MED_avgstack_DNA_4283 red.tif" }; // can be null
+
 		//
 		// set up the planes
 		// 	
@@ -183,7 +187,7 @@ public class AlignXY
 		
 		for ( int c = 0; c < tags.length; ++c )
 			for ( int t = 0; t < AlignProperties.numTiles; ++t )
-				planes.add( new MicroscopyPlane( root + experimentDir, localDir, tags[ c ], mirror[ c ], t ) );
+				planes.add( new MicroscopyPlane( root + experimentDir, localDir, tags[ c ], darkCounts[ c ], mirror[ c ], t ) );
 
 		new AlignXY( planes, new RigidModel2D() );
 	}
