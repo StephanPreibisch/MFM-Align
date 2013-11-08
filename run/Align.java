@@ -19,6 +19,7 @@
 package run;
 
 import ij.CompositeImage;
+import ij.IJ;
 import ij.ImageJ;
 import ij.ImagePlus;
 import ij.ImageStack;
@@ -65,6 +66,7 @@ import mpicbg.models.IllDefinedDataPointsException;
 import mpicbg.models.InvertibleBoundable;
 import mpicbg.models.NotEnoughDataPointsException;
 import mpicbg.models.RigidModel2D;
+import mpicbg.models.TranslationModel2D;
 
 public class Align 
 {
@@ -400,6 +402,8 @@ public class Align
 		// apply models to the avg projections
 		showAlignedProjections( planes ).show();
 		
+		SimpleMultiThreading.threadHaltUnClean();
+		
 		// apply to the images
 		// showAlignedImages( alignZ.getPlanes() ).show();
 
@@ -413,7 +417,7 @@ public class Align
 		final String darkCountsTarget[] = new String[]{ baseDir + "/../Dark Counts/MED_avgstack_mRNA_2464 green.tif",
 														 baseDir + "/../Dark Counts/MED_avgstack_NPC_4283 red.tif",
 														 baseDir + "/../Dark Counts/MED_avgstack_DNA_2464 green.tif" }; // individual can be null or non-existent
-
+		/*
 		CompositeImage ci = createFinalImages( planes, baseDir, target, darkCountsTarget, mirrorTarget, false, false );
 		FileSaver fs = new FileSaver( ci );
 		fs.saveAsTiffStack( new File( baseDir, "raw_aligned.tif" ).getAbsolutePath() );
@@ -428,6 +432,7 @@ public class Align
 		fs = new FileSaver( ci );
 		fs.saveAsTiffStack( new File( baseDir, "avgcorrected_quantile_aligned.tif" ).getAbsolutePath() );
 		ci.close();
+		*/
 	}
 	
 	/**
@@ -496,8 +501,10 @@ public class Align
 		Collections.sort( allDirs );
 		
 		for ( final String s : allDirs )
+		{
 			System.out.println( s );
-		
+			IJ.log( s );
+		}
 		
 		System.out.println( "\nStarting\n" );
 	
@@ -508,6 +515,9 @@ public class Align
 		
 		for ( final String baseDir : allDirs )
 		{
+			IJ.log( "----------------|---------------" );
+			IJ.log( baseDir );
+			System.out.println( "----------------|---------------" );
 			System.out.println( baseDir );
 			
 			try
@@ -531,7 +541,7 @@ public class Align
 		
 		System.out.println( "All done. exiting." );
 		
-		System.exit( 0 );
+		//System.exit( 0 );
 	}
 
 }
