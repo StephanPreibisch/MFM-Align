@@ -19,30 +19,20 @@
 package run;
 
 import ij.CompositeImage;
-import ij.IJ;
 import ij.ImageJ;
 import ij.ImagePlus;
 import ij.ImageStack;
 import ij.io.FileSaver;
 import ij.process.FloatProcessor;
 import io.ExtractPlane;
-import io.OpenPiezoStack;
-import io.TextFileAccess;
 
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 
-import process.AvgProjection3;
-import process.CrossCorrelation;
-import process.Mirror;
-import process.OverlayFusion;
-import process.QuantileNormalization;
-import run.MicroscopyPlane.Mirroring;
 import mpicbg.imglib.container.array.Array;
 import mpicbg.imglib.container.array.ArrayContainerFactory;
 import mpicbg.imglib.container.basictypecontainer.array.FloatArray;
@@ -52,21 +42,20 @@ import mpicbg.imglib.image.display.imagej.ImageJFunctions;
 import mpicbg.imglib.interpolation.InterpolatorFactory;
 import mpicbg.imglib.interpolation.linear.LinearInterpolatorFactory;
 import mpicbg.imglib.io.ImageOpener;
-import mpicbg.imglib.io.LOCI;
-import mpicbg.imglib.multithreading.SimpleMultiThreading;
 import mpicbg.imglib.outofbounds.OutOfBoundsStrategyFactory;
 import mpicbg.imglib.outofbounds.OutOfBoundsStrategyMirrorFactory;
 import mpicbg.imglib.outofbounds.OutOfBoundsStrategyValueFactory;
 import mpicbg.imglib.type.numeric.real.FloatType;
 import mpicbg.models.AbstractAffineModel2D;
 import mpicbg.models.AbstractModel;
-import mpicbg.models.AffineModel2D;
-import mpicbg.models.HomographyModel2D;
-import mpicbg.models.IllDefinedDataPointsException;
 import mpicbg.models.InvertibleBoundable;
-import mpicbg.models.NotEnoughDataPointsException;
 import mpicbg.models.RigidModel2D;
-import mpicbg.models.TranslationModel2D;
+import process.AvgProjection3;
+import process.CrossCorrelation;
+import process.Mirror;
+import process.OverlayFusion;
+import process.QuantileNormalization;
+import run.MicroscopyPlane.Mirroring;
 
 public class Align 
 {
@@ -401,9 +390,7 @@ public class Align
 		
 		// apply models to the avg projections
 		showAlignedProjections( planes ).show();
-		
-		SimpleMultiThreading.threadHaltUnClean();
-		
+
 		// apply to the images
 		// showAlignedImages( alignZ.getPlanes() ).show();
 
@@ -417,7 +404,7 @@ public class Align
 		final String darkCountsTarget[] = new String[]{ baseDir + "/../Dark Counts/MED_avgstack_mRNA_2464 green.tif",
 														 baseDir + "/../Dark Counts/MED_avgstack_NPC_4283 red.tif",
 														 baseDir + "/../Dark Counts/MED_avgstack_DNA_2464 green.tif" }; // individual can be null or non-existent
-		/*
+
 		CompositeImage ci = createFinalImages( planes, baseDir, target, darkCountsTarget, mirrorTarget, false, false );
 		FileSaver fs = new FileSaver( ci );
 		fs.saveAsTiffStack( new File( baseDir, "raw_aligned.tif" ).getAbsolutePath() );
@@ -432,7 +419,6 @@ public class Align
 		fs = new FileSaver( ci );
 		fs.saveAsTiffStack( new File( baseDir, "avgcorrected_quantile_aligned.tif" ).getAbsolutePath() );
 		ci.close();
-		*/
 	}
 	
 	/**
@@ -501,10 +487,7 @@ public class Align
 		Collections.sort( allDirs );
 		
 		for ( final String s : allDirs )
-		{
 			System.out.println( s );
-			IJ.log( s );
-		}
 		
 		System.out.println( "\nStarting\n" );
 	
@@ -515,8 +498,6 @@ public class Align
 		
 		for ( final String baseDir : allDirs )
 		{
-			IJ.log( "----------------|---------------" );
-			IJ.log( baseDir );
 			System.out.println( "----------------|---------------" );
 			System.out.println( baseDir );
 			
@@ -541,7 +522,7 @@ public class Align
 		
 		System.out.println( "All done. exiting." );
 		
-		//System.exit( 0 );
+		System.exit( 0 );
 	}
 
 }
