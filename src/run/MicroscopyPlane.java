@@ -164,7 +164,7 @@ public class MicroscopyPlane extends Tile< TranslationModel1D >
 		return getImagePiezo( this );
 	}
 	
-	public Image<FloatType> getImagePiezo( final MicroscopyPlane plane ) throws FormatException, IOException
+	public static Image<FloatType> getImagePiezo( final MicroscopyPlane plane ) throws FormatException, IOException
 	{	
 		Image<FloatType> image;
 		
