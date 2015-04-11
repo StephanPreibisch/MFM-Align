@@ -26,12 +26,14 @@ import mpicbg.models.NotEnoughDataPointsException;
 import mpicbg.models.PointMatch;
 
 /**
- * 2d-translation {@link AbstractModel} to be applied to points in 2d-space.
+ * 1d-translation model used to calculate the location of the z-planes.
  * 
  * @version 0.2b
  */
 public class TranslationModel1D extends AbstractModel< TranslationModel1D > implements InvertibleCoordinateTransform
 {
+	private static final long serialVersionUID = 7193913463278025602L;
+
 	static final protected int MIN_NUM_MATCHES = 1;
 	
 	public float tx = 0;

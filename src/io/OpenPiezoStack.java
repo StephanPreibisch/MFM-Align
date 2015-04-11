@@ -33,7 +33,12 @@ import mpicbg.imglib.image.ImageFactory;
 import mpicbg.imglib.io.ImageOpener;
 import mpicbg.imglib.type.numeric.real.FloatType;
 
-
+/**
+ * Class to load a stack of planes acquired by the Piezo stage.
+ * 
+ * @author preibischs
+ *
+ */
 public class OpenPiezoStack 
 {
 	public static Image< FloatType > openPiezo( final File dir, final String tag ) throws FormatException, IOException

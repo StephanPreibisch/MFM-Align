@@ -26,17 +26,20 @@ import mpicbg.imglib.container.array.Array;
 import mpicbg.imglib.container.array.ArrayContainerFactory;
 import mpicbg.imglib.container.basictypecontainer.FloatAccess;
 import mpicbg.imglib.container.basictypecontainer.array.FloatArray;
-import mpicbg.imglib.cursor.Cursor;
 import mpicbg.imglib.cursor.LocalizableCursor;
 import mpicbg.imglib.image.Image;
 import mpicbg.imglib.interpolation.Interpolator;
 import mpicbg.imglib.interpolation.InterpolatorFactory;
 import mpicbg.imglib.interpolation.lanczos.LanczosInterpolatorFactory;
-import mpicbg.imglib.interpolation.linear.LinearInterpolatorFactory;
 import mpicbg.imglib.outofbounds.OutOfBoundsStrategyValueFactory;
 import mpicbg.imglib.type.numeric.real.FloatType;
-import mpicbg.imglib.util.DevUtil;
 
+/**
+ * Class to pairwise align the entropy curves for localization of planes in z.
+ * 
+ * @author preibischs
+ *
+ */
 public class Alignment 
 {
 	public static float align1d( final float[] reference, final float[] image2, final double stepSize, final double minPrecision )

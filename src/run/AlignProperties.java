@@ -18,6 +18,12 @@
  */
 package run;
 
+/**
+ * Defines parameters for the alignment in XY and Z.
+ * 
+ * @author preibischs
+ *
+ */
 public class AlignProperties 
 {
 	public final static int numTiles = 9;
@@ -31,5 +37,4 @@ public class AlignProperties
 	
 	//public static double[] sigma = new double[]{ 0.75, 0.75, 4 };
 	public static double[] sigma = new double[]{ 0, 0, 1 };
-
 }

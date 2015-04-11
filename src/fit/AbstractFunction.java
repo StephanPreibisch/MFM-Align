@@ -22,14 +22,22 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import mpicbg.models.AbstractModel;
-import mpicbg.models.CoordinateTransform;
 import mpicbg.models.IllDefinedDataPointsException;
 import mpicbg.models.NotEnoughDataPointsException;
 import mpicbg.models.Point;
 import mpicbg.models.PointMatch;
 
+/**
+ * Implementation of the Function interface for function fitting.
+ * 
+ * @author preibischs
+ *
+ * @param <M>
+ */
 public abstract class AbstractFunction< M extends AbstractFunction< M > > extends AbstractModel< M > implements Function< Point >
 {
+	private static final long serialVersionUID = -5628897768456805162L;
+
 	@Override
 	public int getMinNumMatches() { return getMinNumPoints(); }
 

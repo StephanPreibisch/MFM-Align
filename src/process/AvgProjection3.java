@@ -25,6 +25,12 @@ import mpicbg.imglib.image.Image;
 import mpicbg.imglib.type.numeric.real.FloatType;
 import mpicbg.util.RealSum;
 
+/**
+ * Computes the average intensity projection along the z dimension of a stack.
+ * 
+ * @author preibischs
+ *
+ */
 public class AvgProjection3 
 {
 	public static Image< FloatType > project( final Image< FloatType > image )

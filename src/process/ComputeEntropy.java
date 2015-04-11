@@ -24,6 +24,12 @@ import mpicbg.imglib.image.Image;
 import mpicbg.imglib.multithreading.SimpleMultiThreading;
 import mpicbg.imglib.type.numeric.real.FloatType;
 
+/**
+ * Computes the entropy from the autofocus function.
+ * 
+ * @author preibischs
+ *
+ */
 public class ComputeEntropy 
 {
 	public static float[] computeEntropyForSlices( final Image< FloatType > image, final int bins )

@@ -30,6 +30,12 @@ import mpicbg.imglib.multithreading.SimpleMultiThreading;
 import mpicbg.imglib.type.numeric.complex.ComplexFloatType;
 import mpicbg.imglib.type.numeric.real.FloatType;
 
+/**
+ * Computes the power spectrum & bandpass for a stack taken by the Piezo stage.
+ * 
+ * @author preibischs
+ *
+ */
 public class AutoFocus 
 {
 	public static Image< FloatType > focus( final Image< FloatType > image )

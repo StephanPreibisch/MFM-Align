@@ -18,6 +18,12 @@
  */
 package process;
 
+/**
+ * Utility class for quantile normalization.
+ * 
+ * @author preibischs
+ *
+ */
 public class ValuePosition implements Comparable< ValuePosition >
 {
 	public float value;

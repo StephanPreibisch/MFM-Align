@@ -27,6 +27,12 @@ import mpicbg.imglib.cursor.LocalizableCursor;
 import mpicbg.imglib.image.Image;
 import mpicbg.imglib.type.numeric.real.FloatType;
 
+/**
+ * Computes quantile normalization for ad-hoc intensity correction.
+ * 
+ * @author preibischs
+ *
+ */
 public class QuantileNormalization 
 {
 	public static void normalizeTo( final Image< FloatType > reference, final Image< FloatType > template )

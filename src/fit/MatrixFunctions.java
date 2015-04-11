@@ -20,6 +20,12 @@ package fit;
 
 import mpicbg.models.NoninvertibleModelException;
 
+/**
+ * Methods for computing the determinant and matrix inversion.
+ * 
+ * @author preibischs
+ *
+ */
 public class MatrixFunctions
 {
 	/**

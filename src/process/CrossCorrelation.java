@@ -20,18 +20,19 @@ package process;
 
 import java.util.Arrays;
 
-import mpicbg.imglib.container.array.Array;
-import mpicbg.imglib.container.basictypecontainer.array.FloatArray;
 import mpicbg.imglib.cursor.Cursor;
 import mpicbg.imglib.cursor.LocalizableByDimCursor;
 import mpicbg.imglib.cursor.LocalizableCursor;
 import mpicbg.imglib.image.Image;
-import mpicbg.imglib.image.display.imagej.ImageJFunctions;
 import mpicbg.imglib.interpolation.Interpolator;
-import mpicbg.imglib.multithreading.SimpleMultiThreading;
 import mpicbg.imglib.type.numeric.real.FloatType;
-import mpicbg.imglib.util.Util;
 
+/**
+ * Contains utility methods for comparing and normalizing image planes.
+ * 
+ * @author preibischs
+ *
+ */
 public class CrossCorrelation 
 {
 	public static float[] corrlatePlane( final Image< FloatType > image1, final Image< FloatType > image2, final int plane1, final int range )

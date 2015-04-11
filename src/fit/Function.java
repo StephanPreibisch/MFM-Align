@@ -24,7 +24,7 @@ import mpicbg.models.NotEnoughDataPointsException;
 import mpicbg.models.Point;
 
 /**
- * Interface for a {@link Function} that can be fit to {@link Point}s
+ * Interface for a function that can be fitted to a list of Points (mpicbg package).
  * 
  * @author Stephan Preibisch
  *

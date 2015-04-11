@@ -21,6 +21,13 @@ package fit;
 import mpicbg.imglib.util.Util;
 import mpicbg.models.Point;
 
+/**
+ * Extends the Point class (mpicbg package) by linking of an arbitrary Object.
+ * 
+ * @author preibischs
+ *
+ * @param <P>
+ */
 public class LinkedPoint<P> extends Point
 {
 	private static final long serialVersionUID = 1L;

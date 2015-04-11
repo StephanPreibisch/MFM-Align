@@ -51,6 +51,12 @@ import process.CrossCorrelation;
 import process.Mirror;
 import run.MicroscopyPlane.Mirroring;
 
+/**
+ * Class that runs the Z alignment from the process package.
+ * 
+ * @author preibischs
+ *
+ */
 public class AlignZ 
 {
 	final ArrayList< MicroscopyPlane > planes;

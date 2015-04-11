@@ -21,9 +21,6 @@ package run;
 import ij.ImageJ;
 import ij.ImagePlus;
 import ij.ImageStack;
-import ij.io.FileSaver;
-import io.ExtractPlane;
-import io.OpenPiezoStack;
 import io.TextFileAccess;
 
 import java.io.File;
@@ -32,14 +29,10 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 
 import loci.formats.FormatException;
-import mpicbg.imglib.container.array.ArrayContainerFactory;
 import mpicbg.imglib.image.Image;
 import mpicbg.imglib.image.display.imagej.ImageJFunctions;
-import mpicbg.imglib.io.LOCI;
 import mpicbg.imglib.type.numeric.real.FloatType;
-import mpicbg.models.AbstractAffineModel2D;
 import mpicbg.models.AbstractModel;
-import mpicbg.models.AffineModel2D;
 import mpicbg.models.IllDefinedDataPointsException;
 import mpicbg.models.NotEnoughDataPointsException;
 import mpicbg.models.RigidModel2D;
@@ -47,10 +40,15 @@ import plugin.DescriptorParameters;
 import plugin.Descriptor_based_series_registration;
 import process.AvgProjection3;
 import process.Matching;
-import process.Mirror;
 import process.OverlayFusion;
 import run.MicroscopyPlane.Mirroring;
 
+/**
+ * Class that runs the XY alignment using Descriptor-based registration package.
+ * 
+ * @author preibischs
+ *
+ */
 public class AlignXY 
 {
 	final ArrayList< MicroscopyPlane > planes;

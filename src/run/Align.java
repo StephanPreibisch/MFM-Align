@@ -57,6 +57,12 @@ import process.OverlayFusion;
 import process.QuantileNormalization;
 import run.MicroscopyPlane.Mirroring;
 
+/**
+ * Major class that coordinates alignment in XY and Z.
+ * 
+ * @author preibischs
+ *
+ */
 public class Align 
 {
 	public static final PrintWriter outAllZ = null;//TextFileAccess.openFileWrite( "/Volumes/TOSHIBA EXT/3D analysis files/alloutZ.txt" );

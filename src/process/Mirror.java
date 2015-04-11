@@ -22,6 +22,12 @@ import mpicbg.imglib.algorithm.mirror.MirrorImage;
 import mpicbg.imglib.image.Image;
 import mpicbg.imglib.type.numeric.real.FloatType;
 
+/**
+ * Class to horizontally mirror an image.
+ * 
+ * @author preibischs
+ *
+ */
 public class Mirror 
 {
 	public static void horizontal( final Image< FloatType > image )

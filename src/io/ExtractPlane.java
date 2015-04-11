@@ -18,18 +18,24 @@
  */
 package io;
 
+import ij.IJ;
+
 import java.util.Vector;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import ij.IJ;
 import mpicbg.imglib.cursor.LocalizableByDimCursor;
 import mpicbg.imglib.cursor.LocalizableCursor;
 import mpicbg.imglib.image.Image;
-import mpicbg.imglib.image.display.imagej.ImageJFunctions;
 import mpicbg.imglib.multithreading.Chunk;
 import mpicbg.imglib.multithreading.SimpleMultiThreading;
 import mpicbg.imglib.type.numeric.real.FloatType;
 
+/**
+ * Class to extract the 9 planes from one acquired image.
+ * 
+ * @author preibischs
+ *
+ */
 public class ExtractPlane 
 {
 	public static Image< FloatType > extract( final Image< FloatType > stack, final int index )

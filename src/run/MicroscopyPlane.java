@@ -26,23 +26,28 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 
-import process.Mirror;
 import loci.formats.FormatException;
 import mpicbg.imglib.container.array.ArrayContainerFactory;
 import mpicbg.imglib.cursor.Cursor;
 import mpicbg.imglib.image.Image;
 import mpicbg.imglib.image.display.imagej.ImageJFunctions;
 import mpicbg.imglib.io.LOCI;
-import mpicbg.imglib.multithreading.SimpleMultiThreading;
 import mpicbg.imglib.type.numeric.real.FloatType;
 import mpicbg.imglib.util.Util;
 import mpicbg.models.InvertibleBoundable;
 import mpicbg.models.Tile;
+import process.Mirror;
 import fit.Line;
 import fit.LinkedPoint;
 import fit.PointFunctionMatch;
 import fit.TranslationModel1D;
 
+/**
+ * Class that represents an individual z plane as acquired by the microscope.
+ * 
+ * @author preibischs
+ *
+ */
 public class MicroscopyPlane extends Tile< TranslationModel1D >
 {
 	public static enum Mirroring { DONOT, HORIZONTALLY };

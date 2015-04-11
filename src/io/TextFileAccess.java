@@ -25,6 +25,12 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 
+/**
+ * Collection of methods to read and write text files.
+ * 
+ * @author preibischs
+ *
+ */
 public class TextFileAccess 
 {
 	public static BufferedReader openFileRead(final File file)

@@ -28,9 +28,6 @@ import io.TextFileAccess;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 import loci.formats.FormatException;
 import mpicbg.imglib.algorithm.gauss.GaussianConvolutionReal;
@@ -42,7 +39,6 @@ import mpicbg.imglib.io.LOCI;
 import mpicbg.imglib.multithreading.SimpleMultiThreading;
 import mpicbg.imglib.outofbounds.OutOfBoundsStrategyMirrorFactory;
 import mpicbg.imglib.type.numeric.real.FloatType;
-import mpicbg.imglib.util.DevUtil;
 import mpicbg.models.RigidModel2D;
 import plugin.DescriptorParameters;
 import plugin.Descriptor_based_registration;
@@ -56,6 +52,12 @@ import process.Mirror;
 import process.OverlayFusion;
 import run.MicroscopyPlane.Mirroring;
 
+/**
+ * Test class to align one dataset (contains main method for testing).
+ * 
+ * @author preibischs
+ *
+ */
 public class Start 
 {
 	public static int minNumInliers = 10;

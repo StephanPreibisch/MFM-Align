@@ -25,8 +25,16 @@ import mpicbg.models.IllDefinedDataPointsException;
 import mpicbg.models.NotEnoughDataPointsException;
 import mpicbg.models.Point;
 
+/**
+ * Implementation of the Function interface for a 2-dimensional line.
+ * 
+ * @author preibischs
+ *
+ */
 public class Line extends AbstractFunction<Line>
 {
+	private static final long serialVersionUID = 5289346951323596267L;
+
 	final int minNumPoints = 2;
 	
 	double n, m;	

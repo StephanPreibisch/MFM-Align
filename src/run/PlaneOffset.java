@@ -20,6 +20,12 @@ package run;
 
 import mpicbg.models.Point;
 
+/**
+ * Class that links a certain position in z to an MicroscopyPlane.
+ * 
+ * @author preibischs
+ *
+ */
 public class PlaneOffset extends Point
 {
 	private static final long serialVersionUID = 1L;

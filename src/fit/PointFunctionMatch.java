@@ -22,6 +22,12 @@ import mpicbg.models.CoordinateTransform;
 import mpicbg.models.Point;
 import mpicbg.models.PointMatch;
 
+/**
+ * Class allowing fitting Points to a Function using the mpicbg package.
+ * 
+ * @author preibischs
+ *
+ */
 public class PointFunctionMatch extends PointMatch
 {
 	private static final long serialVersionUID = -8070932126418631690L;
@@ -44,7 +50,7 @@ public class PointFunctionMatch extends PointMatch
 	@Deprecated
 	@Override
 	public Point getP2() { return null; }
-	
+
 	public void apply( final CoordinateTransform t )
 	{
 		distance = (float)((Function)t).distanceTo( p1 );
